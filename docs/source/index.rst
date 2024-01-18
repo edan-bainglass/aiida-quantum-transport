@@ -1,20 +1,15 @@
-The aiida-quantum-transport plugin for `AiiDA`_
-=====================================================
+:sd_hide_title:
 
-``aiida-quantum-transport`` is available at http://github.com/edan-bainglass/aiida-quantum-transport
+.. _welcome:
 
+AiiDA-Quantum-Transport Plugin Documentation
+############################################
+
+``aiida-quantum-transport`` is available at http://github.com/edan-bainglass/aiida-quantum-transport.
 
 .. toctree::
-   :maxdepth: 2
 
-   user_guide/index
-   developer_guide/index
-   API documentation <apidoc/aiida_quantum_transport>
    AiiDA Documentation <https://aiida.readthedocs.io>
-
-If you use this plugin for your research, please cite the following work:
-
-.. highlights:: Author Name1, Author Name2, *Paper title*, Jornal Name XXX, YYYY (Year).
 
 If you use AiiDA for your research, please cite the following work:
 
@@ -26,13 +21,3 @@ If you use AiiDA for your research, please cite the following work:
 ``aiida-quantum-transport`` is released under the MIT license.
 
 Please contact edan.bainglass@gmail.com for information concerning ``aiida-quantum-transport`` and the `AiiDA mailing list <http://www.aiida.net/mailing-list/>`_ for questions concerning ``aiida``.
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-.. _AiiDA: http://www.aiida.net

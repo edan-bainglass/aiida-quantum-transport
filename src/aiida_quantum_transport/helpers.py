@@ -1,17 +1,18 @@
 """ Helper functions for automatically setting up computer & code.
+
 Helper functions for setting up
 
  1. An AiiDA localhost computer
- 2. A "diff" code on localhost
+ 2. A code on localhost
 
-Note: Point 2 is made possible by the fact that the ``diff`` executable is
-available in the PATH on almost any UNIX system.
 """
+from __future__ import annotations
+
 import shutil
 import tempfile
 
 from aiida.common.exceptions import NotExistent
-from aiida.orm import Code, Computer
+from aiida.orm import Code, Computer, Node
 
 LOCALHOST_NAME = "localhost-test"
 
@@ -20,12 +21,23 @@ executables = {
 }
 
 
-def get_path_to_executable(executable):
+def get_path_to_executable(executable: str) -> str:
     """Get path to local executable.
-    :param executable: Name of executable in the $PATH variable
-    :type executable: str
-    :return: path to executable
-    :rtype: str
+
+    Parameters
+    ----------
+    `executable` : `str`
+        Name of executable in the `$PATH` variable.
+
+    Returns
+    -------
+    `str`
+        Path to executable.
+
+    Raises
+    ------
+    `ValueError`
+        If executable was not found in `$PATH`.
     """
     path = shutil.which(executable)
     if path is None:
@@ -33,16 +45,27 @@ def get_path_to_executable(executable):
     return path
 
 
-def get_computer(name=LOCALHOST_NAME, workdir=None):
+def get_computer(
+    name: str = LOCALHOST_NAME,
+    workdir: str | None = None,
+) -> Computer:
     """Get AiiDA computer.
+
     Loads computer 'name' from the database, if exists.
     Sets up local computer 'name', if it isn't found in the DB.
 
-    :param name: Name of computer to load or set up.
-    :param workdir: path to work directory
+    Parameters
+    ----------
+    `name` : `str`
+        Name of computer to load or set up., `LOCALHOST_NAME` by default.
+    `workdir` : `str | None`
+        path to work directory, `None` by default.
         Used only when creating a new computer.
-    :return: The computer node
-    :rtype: :py:class:`aiida.orm.computers.Computer`
+
+    Returns
+    -------
+    `aiida.orm.computers.Computer`
+        The computer Node.
     """
 
     try:
@@ -53,7 +76,7 @@ def get_computer(name=LOCALHOST_NAME, workdir=None):
 
         computer = Computer(
             label=name,
-            description="localhost computer set up by aiida_diff tests",
+            description="localhost",
             hostname=name,
             workdir=workdir,
             transport_type="core.local",
@@ -66,14 +89,27 @@ def get_computer(name=LOCALHOST_NAME, workdir=None):
     return computer
 
 
-def get_code(entry_point, computer):
+def get_code(entry_point: str, computer: Computer) -> Node:
     """Get local code.
+
     Sets up code for given entry point on given computer.
 
-    :param entry_point: Entry point of calculation plugin
-    :param computer: (local) AiiDA computer
-    :return: The code node
-    :rtype: :py:class:`aiida.orm.nodes.data.code.installed.InstalledCode`
+    Parameters
+    ----------
+    `entry_point` : `str`
+        Entry point of calculation plugin.
+    `computer` : `Computer`
+        (local) AiiDA computer.
+
+    Returns
+    -------
+    `aiida.orm.Node`
+        The code node.
+
+    Raises
+    ------
+    `KeyError`
+        If entry point is not recognized.
     """
 
     try:
@@ -83,9 +119,7 @@ def get_code(entry_point, computer):
             f"Entry point '{entry_point}' not recognized. Allowed values: {list(executables.keys())}"
         ) from exc
 
-    codes = Code.objects.find(  # pylint: disable=no-member
-        filters={"label": executable}
-    )
+    codes = Code.objects.find(filters={"label": executable})
     if codes:
         return codes[0]
 
