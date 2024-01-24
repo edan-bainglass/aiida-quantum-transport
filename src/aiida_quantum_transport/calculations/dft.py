@@ -32,31 +32,25 @@ class GpawCalculation(CalcJob):
         spec.input(
             "code",
             valid_type=orm.AbstractCode,
-            help="The GPAW script.",
+            help="The GPAW script",
         )
 
         spec.input(
             "structure",
             valid_type=orm.StructureData,
-            help="",  # TODO fill in
+            help="The structure of interest",
         )
 
         spec.input(
             "kpoints",
             valid_type=orm.KpointsData,
-            help="",  # TODO fill in
+            help="The kpoints mesh",
         )
 
         spec.input(
             "parameters",
             valid_type=orm.Dict,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "output_filename_prefix",
-            valid_type=orm.Str,
-            help="A prefix for output files.",
+            help="The input parameters",
         )
 
         spec.input(
@@ -65,27 +59,15 @@ class GpawCalculation(CalcJob):
             default=cls._default_parser_name,
         )
 
-        for i, file in enumerate(("log", "restart", "hamiltonian")):
+        for file in ("log", "restart", "hamiltonian"):
             spec.output(
                 f"{file}_file",
                 valid_type=orm.SinglefileData,
                 help=f"The {file} file",
             )
 
-            spec.exit_code(
-                301 + i,
-                f"ERROR_MISSING_{file.upper()}_FILE",
-                f"Missing {file} file.",
-            )
-
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
-
-        output_filenames = {}
-        for key in ("log", "restart", "hamiltonian"):
-            prefix: orm.Str = self.inputs.output_filename_prefix
-            filename = self._default_filenames[key]
-            output_filenames[key] = filename.replace("gpaw", prefix.value)
 
         pickled_atoms_filename = "atoms.pkl"
         with folder.open(pickled_atoms_filename, "wb") as file:
@@ -111,21 +93,11 @@ class GpawCalculation(CalcJob):
             pickled_kpoints_filename,
             "--parameters-filename",
             pickled_parameters_filename,
-            "--log-filename",
-            output_filenames["log"],
-            "--restart-filename",
-            output_filenames["restart"],
-            "--hamiltonian-filename",
-            output_filenames["hamiltonian"],
         ]
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
-        calcinfo.retrieve_list = [
-            output_filenames["log"],
-            output_filenames["restart"],
-            output_filenames["hamiltonian"],
-        ]
+        calcinfo.retrieve_list = ["log.txt", "restart.gpw", "hs.npy"]
 
         return calcinfo

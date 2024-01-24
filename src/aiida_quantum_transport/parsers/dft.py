@@ -11,25 +11,17 @@ class GpawParser(Parser):
     """docstring"""
 
     _OUTPUT_FILE_MAPPING = {
-        ".txt": "log",
-        ".gpw": "restart",
-        ".hs.npy": "hamiltonian",
+        "log": "log.txt",
+        "restart": "restart.gpw",
+        "hamiltonian": "hs.npy",
     }
 
     def parse(self, **kwargs) -> ExitCode | None:
         """docstring"""
 
-        prefix: orm.Str = self.node.inputs.output_filename_prefix
-
-        output_files = filter(
-            lambda f: prefix.value in f,
-            self.retrieved.base.repository.list_object_names(),
-        )
-
-        for filename in output_files:
+        for label, filename in self._OUTPUT_FILE_MAPPING.items():
             path = Path(self.node.get_remote_workdir()) / filename
-            extension = filename.strip(prefix.value)
-            output_label = f"{self._OUTPUT_FILE_MAPPING[extension]}_file"
+            output_label = f"{label}_file"
             self.out(output_label, orm.SinglefileData(path))
 
         return None
