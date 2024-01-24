@@ -38,21 +38,21 @@ class CoulombDiamondsWorkChain(WorkChain):
             exclude=["code"],
         )
 
-        # spec.expose_inputs(
-        #     GpawCalculation,
-        #     namespace="dft.device",
-        #     exclude=["code"],
-        # )
+        spec.expose_inputs(
+            GpawCalculation,
+            namespace="dft.device",
+            exclude=["code"],
+        )
 
         spec.expose_outputs(
             GpawCalculation,
             namespace="dft.leads",
         )
 
-        # spec.expose_outputs(
-        #     GpawCalculation,
-        #     namespace="dft.device",
-        # )
+        spec.expose_outputs(
+            GpawCalculation,
+            namespace="dft.device",
+        )
 
         spec.outline(
             cls.run_dft,
@@ -74,14 +74,14 @@ class CoulombDiamondsWorkChain(WorkChain):
             **self.exposed_inputs(GpawCalculation, namespace="dft.leads"),
         }
 
-        # device_inputs = {
-        #     "code": self.inputs.dft.code,
-        #     **self.exposed_inputs(GpawCalculation, namespace="dft.device"),
-        # }
+        device_inputs = {
+            "code": self.inputs.dft.code,
+            **self.exposed_inputs(GpawCalculation, namespace="dft.device"),
+        }
 
         return ToContext(
             dft_leads=self.submit(GpawCalculation, **leads_inputs),
-            # dft_device=self.submit(GpawCalculation, **device_inputs),
+            dft_device=self.submit(GpawCalculation, **device_inputs),
         )
 
     def define_scattering_region(self):
@@ -116,10 +116,10 @@ class CoulombDiamondsWorkChain(WorkChain):
             )
         )
 
-        # self.out_many(
-        #     self.exposed_outputs(
-        #         self.ctx.dft_device,
-        #         GpawCalculation,
-        #         namespace="dft.device",
-        #     )
-        # )
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.dft_device,
+                GpawCalculation,
+                namespace="dft.device",
+            )
+        )
