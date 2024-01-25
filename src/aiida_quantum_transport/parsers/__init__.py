@@ -1,9 +1,9 @@
 from .custom import CustomParser
-from .dft import GpawParser
-from .los import LosParser
+from .dft import DFTParser
+from .localize import LocalizationParser
 
 __all__ = [
     "CustomParser",
-    "GpawParser",
-    "LosParser",
+    "DFTParser",
+    "LocalizationParser",
 ]

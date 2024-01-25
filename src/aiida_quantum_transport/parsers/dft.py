@@ -7,7 +7,7 @@ from aiida.engine import ExitCode
 from aiida.parsers import Parser
 
 
-class GpawParser(Parser):
+class DFTParser(Parser):
     """docstring"""
 
     _OUTPUT_FILE_MAPPING = {

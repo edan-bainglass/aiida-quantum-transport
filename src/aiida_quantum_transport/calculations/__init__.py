@@ -1,11 +1,11 @@
 from .custom import CustomCalculation
-from .dft import GpawCalculation
+from .dft import DFTCalculation
 from .functions import *
-from .los import LosCalculation
+from .localize import LocalizationCalculation
 
 __all__ = [
     "CustomCalculation",
-    "GpawCalculation",
+    "DFTCalculation",
     "get_scattering_region",
-    "LosCalculation",
+    "LocalizationCalculation",
 ]

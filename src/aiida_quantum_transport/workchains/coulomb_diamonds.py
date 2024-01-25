@@ -6,8 +6,8 @@ from aiida import orm
 from aiida.engine import ToContext, WorkChain
 
 from aiida_quantum_transport.calculations import (
-    GpawCalculation,
-    LosCalculation,
+    DFTCalculation,
+    LocalizationCalculation,
     get_scattering_region,
 )
 
@@ -33,17 +33,17 @@ class CoulombDiamondsWorkChain(WorkChain):
         spec.input(
             "dft.code",
             valid_type=orm.AbstractCode,
-            help="The GPAW script",
+            help="The DFT script",
         )
 
         spec.expose_inputs(
-            GpawCalculation,
+            DFTCalculation,
             namespace="dft.leads",
             exclude=["code"],
         )
 
         spec.expose_inputs(
-            GpawCalculation,
+            DFTCalculation,
             namespace="dft.device",
             exclude=["code"],
         )
@@ -63,24 +63,24 @@ class CoulombDiamondsWorkChain(WorkChain):
         )
 
         spec.expose_inputs(
-            LosCalculation,
-            namespace="los",
+            LocalizationCalculation,
+            namespace="localization",
             include=["code", "lowdin", "metadata"],
         )
 
         spec.expose_outputs(
-            GpawCalculation,
+            DFTCalculation,
             namespace="dft.leads",
         )
 
         spec.expose_outputs(
-            GpawCalculation,
+            DFTCalculation,
             namespace="dft.device",
         )
 
         spec.expose_outputs(
-            LosCalculation,
-            namespace="los",
+            LocalizationCalculation,
+            namespace="localization",
         )
 
         spec.outline(
@@ -100,17 +100,17 @@ class CoulombDiamondsWorkChain(WorkChain):
 
         leads_inputs = {
             "code": self.inputs.dft.code,
-            **self.exposed_inputs(GpawCalculation, namespace="dft.leads"),
+            **self.exposed_inputs(DFTCalculation, namespace="dft.leads"),
         }
 
         device_inputs = {
             "code": self.inputs.dft.code,
-            **self.exposed_inputs(GpawCalculation, namespace="dft.device"),
+            **self.exposed_inputs(DFTCalculation, namespace="dft.device"),
         }
 
         return ToContext(
-            dft_leads=self.submit(GpawCalculation, **leads_inputs),
-            dft_device=self.submit(GpawCalculation, **device_inputs),
+            dft_leads=self.submit(DFTCalculation, **leads_inputs),
+            dft_device=self.submit(DFTCalculation, **device_inputs),
         )
 
     def define_scattering_region(self):
@@ -122,15 +122,23 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def transform_basis(self):
         """docstring"""
-        los_inputs = {
+        localization_inputs = {
             "restart_file": self.ctx.dft_device.outputs.restart_file,
             "scattering": {
                 "region": self.ctx.scattering_region,
                 "active": self.inputs.scattering.active,
             },
-            **self.exposed_inputs(LosCalculation, namespace="los"),
+            **self.exposed_inputs(
+                LocalizationCalculation,
+                namespace="localization",
+            ),
         }
-        return ToContext(los=self.submit(LosCalculation, **los_inputs))
+        return ToContext(
+            localization=self.submit(
+                LocalizationCalculation,
+                **localization_inputs,
+            )
+        )
 
     def compute_hybridization(self):
         """docstring"""
@@ -153,7 +161,7 @@ class CoulombDiamondsWorkChain(WorkChain):
         self.out_many(
             self.exposed_outputs(
                 self.ctx.dft_leads,
-                GpawCalculation,
+                DFTCalculation,
                 namespace="dft.leads",
             )
         )
@@ -161,15 +169,15 @@ class CoulombDiamondsWorkChain(WorkChain):
         self.out_many(
             self.exposed_outputs(
                 self.ctx.dft_device,
-                GpawCalculation,
+                DFTCalculation,
                 namespace="dft.device",
             )
         )
 
         self.out_many(
             self.exposed_outputs(
-                self.ctx.los,
-                LosCalculation,
-                namespace="los",
+                self.ctx.localization,
+                LocalizationCalculation,
+                namespace="localization",
             )
         )

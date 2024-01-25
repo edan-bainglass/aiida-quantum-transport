@@ -13,10 +13,10 @@ if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class LosCalculation(CalcJob):
+class LocalizationCalculation(CalcJob):
     """docstring"""
 
-    _default_parser_name = "quantum_transport.los"
+    _default_parser_name = "quantum_transport.localize"
 
     @classmethod
     def define(cls, spec: CalcJobProcessSpec) -> None:
@@ -33,7 +33,7 @@ class LosCalculation(CalcJob):
         spec.input(
             "restart_file",
             valid_type=orm.SinglefileData,
-            help="The gpaw restart file",
+            help="The dft restart file",
         )
 
         spec.input(

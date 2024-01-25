@@ -7,7 +7,7 @@ from aiida.engine import ExitCode
 from aiida.parsers import Parser
 
 
-class LosParser(Parser):
+class LocalizationParser(Parser):
     """docstring"""
 
     _OUTPUT_FILE_MAPPING = {

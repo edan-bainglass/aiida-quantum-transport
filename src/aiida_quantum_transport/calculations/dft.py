@@ -12,15 +12,15 @@ if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class GpawCalculation(CalcJob):
+class DFTCalculation(CalcJob):
     """docstring"""
 
-    _default_parser_name = "quantum_transport.gpaw"
+    _default_parser_name = "quantum_transport.dft"
 
     _default_filenames = {
-        "log": "gpaw.txt",
-        "restart": "gpaw.gpw",
-        "hamiltonian": "gpaw.hs.npy",
+        "log": "dft.txt",
+        "restart": "dft.gpw",
+        "hamiltonian": "dft.hs.npy",
     }
 
     @classmethod
@@ -32,7 +32,7 @@ class GpawCalculation(CalcJob):
         spec.input(
             "code",
             valid_type=orm.AbstractCode,
-            help="The GPAW script",
+            help="The DFT script",
         )
 
         spec.input(
