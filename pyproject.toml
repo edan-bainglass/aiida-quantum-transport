@@ -30,6 +30,7 @@ requires-python = ">=3.9"
 [project.entry-points."aiida.calculations"]
 "quantum_transport" = "aiida_quantum_transport.calculations.custom:CustomCalculation"
 "quantum_transport.gpaw" = "aiida_quantum_transport.calculations.dft:GpawCalculation"
+"quantum_transport.los" = "aiida_quantum_transport.calculations.los:LosCalculation"
 
 [project.entry-points."aiida.cmdline.data"]
 "quantum_transport" = "aiida_quantum_transport.cli.commands:data_cli"
@@ -40,6 +41,7 @@ requires-python = ">=3.9"
 [project.entry-points."aiida.parsers"]
 "quantum_transport" = "aiida_quantum_transport.parsers.custom:CustomParser"
 "quantum_transport.gpaw" = "aiida_quantum_transport.parsers.dft:GpawParser"
+"quantum_transport.los" = "aiida_quantum_transport.parsers.los:LosParser"
 
 [project.optional-dependencies]
 docs = ["sphinx-design~=0.4.1", "pydata-sphinx-theme==0.13.3"]

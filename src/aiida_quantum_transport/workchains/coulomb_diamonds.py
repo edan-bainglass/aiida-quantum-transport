@@ -5,10 +5,14 @@ from typing import TYPE_CHECKING
 from aiida import orm
 from aiida.engine import ToContext, WorkChain
 
+from aiida_quantum_transport.calculations import (
+    GpawCalculation,
+    LosCalculation,
+    get_scattering_region,
+)
+
 if TYPE_CHECKING:
     from aiida.engine.processes.workchains.workchain import WorkChainSpec
-
-from aiida_quantum_transport.calculations import GpawCalculation
 
 
 class CoulombDiamondsWorkChain(WorkChain):
@@ -44,6 +48,26 @@ class CoulombDiamondsWorkChain(WorkChain):
             exclude=["code"],
         )
 
+        spec.input(
+            "scattering.region",
+            valid_type=orm.Dict,
+            required=False,
+            default=orm.Dict({}),
+            help="The xy-limits defining the scattering region",
+        )
+
+        spec.input(
+            "scattering.active",
+            valid_type=orm.Dict,
+            help="The active species",
+        )
+
+        spec.expose_inputs(
+            LosCalculation,
+            namespace="los",
+            include=["code", "lowdin", "metadata"],
+        )
+
         spec.expose_outputs(
             GpawCalculation,
             namespace="dft.leads",
@@ -54,10 +78,15 @@ class CoulombDiamondsWorkChain(WorkChain):
             namespace="dft.device",
         )
 
+        spec.expose_outputs(
+            LosCalculation,
+            namespace="los",
+        )
+
         spec.outline(
             cls.run_dft,
-            # cls.define_scattering_region,
-            # cls.transform_basis,
+            cls.define_scattering_region,
+            cls.transform_basis,
             # cls.compute_hybridization,
             # cls.run_dmft_adjust_mu,
             # cls.run_dmft_sweep_mu,
@@ -86,9 +115,22 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def define_scattering_region(self):
         """docstring"""
+        self.ctx.scattering_region = get_scattering_region(
+            device=self.inputs.dft.device.structure,
+            **self.inputs.scattering.region,
+        )
 
     def transform_basis(self):
         """docstring"""
+        los_inputs = {
+            "restart_file": self.ctx.dft_device.outputs.restart_file,
+            "scattering": {
+                "region": self.ctx.scattering_region,
+                "active": self.inputs.scattering.active,
+            },
+            **self.exposed_inputs(LosCalculation, namespace="los"),
+        }
+        return ToContext(los=self.submit(LosCalculation, **los_inputs))
 
     def compute_hybridization(self):
         """docstring"""
@@ -121,5 +163,13 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.dft_device,
                 GpawCalculation,
                 namespace="dft.device",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.los,
+                LosCalculation,
+                namespace="los",
             )
         )
