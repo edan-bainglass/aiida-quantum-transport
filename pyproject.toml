@@ -31,6 +31,7 @@ requires-python = ">=3.9"
 "quantum_transport" = "aiida_quantum_transport.calculations.custom:CustomCalculation"
 "quantum_transport.dft" = "aiida_quantum_transport.calculations.dft:DFTCalculation"
 "quantum_transport.localize" = "aiida_quantum_transport.calculations.localize:LocalizationCalculation"
+"quantum_transport.hybridize" = "aiida_quantum_transport.calculations.hybridize:HybridizationCalculation"
 
 [project.entry-points."aiida.cmdline.data"]
 "quantum_transport" = "aiida_quantum_transport.cli.commands:data_cli"
@@ -42,6 +43,7 @@ requires-python = ">=3.9"
 "quantum_transport" = "aiida_quantum_transport.parsers.custom:CustomParser"
 "quantum_transport.dft" = "aiida_quantum_transport.parsers.dft:DFTParser"
 "quantum_transport.localize" = "aiida_quantum_transport.parsers.localize:LocalizationParser"
+"quantum_transport.hybridize" = "aiida_quantum_transport.parsers.hybridize:HybridizationParser"
 
 [project.optional-dependencies]
 docs = ["sphinx-design~=0.4.1", "pydata-sphinx-theme==0.13.3"]

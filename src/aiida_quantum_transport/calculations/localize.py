@@ -40,6 +40,7 @@ class LocalizationCalculation(CalcJob):
             "scattering.region",
             valid_type=orm.ArrayData,
             required=False,
+            default=lambda: orm.ArrayData([]),
             help="The scattering region",
         )
 
@@ -52,7 +53,7 @@ class LocalizationCalculation(CalcJob):
         spec.input(
             "lowdin",
             valid_type=orm.Bool,
-            default=orm.Bool(False),
+            default=lambda: orm.Bool(False),
             help="",  # TODO fill in
         )
 

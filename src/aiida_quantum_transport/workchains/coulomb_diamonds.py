@@ -7,6 +7,7 @@ from aiida.engine import ToContext, WorkChain
 
 from aiida_quantum_transport.calculations import (
     DFTCalculation,
+    HybridizationCalculation,
     LocalizationCalculation,
     get_scattering_region,
 )
@@ -48,11 +49,12 @@ class CoulombDiamondsWorkChain(WorkChain):
             exclude=["code"],
         )
 
+        # TODO rethink this one (redefines localization input)
         spec.input(
             "scattering.region",
             valid_type=orm.Dict,
             required=False,
-            default=orm.Dict({}),
+            default=lambda: orm.Dict({}),
             help="The xy-limits defining the scattering region",
         )
 
@@ -66,6 +68,12 @@ class CoulombDiamondsWorkChain(WorkChain):
             LocalizationCalculation,
             namespace="localization",
             include=["code", "lowdin", "metadata"],
+        )
+
+        spec.expose_inputs(
+            HybridizationCalculation,
+            namespace="hybridization",
+            include=["code", "basis", "parameters", "metadata"],
         )
 
         spec.expose_outputs(
@@ -83,11 +91,16 @@ class CoulombDiamondsWorkChain(WorkChain):
             namespace="localization",
         )
 
+        spec.expose_outputs(
+            HybridizationCalculation,
+            namespace="hybridization",
+        )
+
         spec.outline(
             cls.run_dft,
             cls.define_scattering_region,
             cls.transform_basis,
-            # cls.compute_hybridization,
+            cls.compute_hybridization,
             # cls.run_dmft_adjust_mu,
             # cls.run_dmft_sweep_mu,
             # cls.compute_transmission,
@@ -142,6 +155,30 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def compute_hybridization(self):
         """docstring"""
+        hybridization_inputs = {
+            "leads": {
+                "structure": self.inputs.dft.leads.structure,
+                "kpoints": self.inputs.dft.leads.kpoints,
+                "hamiltonian_file": self.ctx.dft_leads.outputs.hamiltonian_file,
+            },
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
+            "localization": {
+                "index_file": self.ctx.localization.outputs.index_file,
+                "hamiltonian_file": self.ctx.localization.outputs.hamiltonian_file,
+            },
+            **self.exposed_inputs(
+                HybridizationCalculation,
+                namespace="hybridization",
+            ),
+        }
+        return ToContext(
+            hybridization=self.submit(
+                HybridizationCalculation,
+                **hybridization_inputs,
+            )
+        )
 
     def run_dmft_adjust_mu(self):
         """docstring"""
@@ -179,5 +216,13 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.localization,
                 LocalizationCalculation,
                 namespace="localization",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.hybridization,
+                HybridizationCalculation,
+                namespace="hybridization",
             )
         )
