@@ -7,6 +7,7 @@ from aiida.engine import ToContext, WorkChain
 
 from aiida_quantum_transport.calculations import (
     DFTCalculation,
+    DMFTCalculation,
     HybridizationCalculation,
     LocalizationCalculation,
     get_scattering_region,
@@ -76,6 +77,32 @@ class CoulombDiamondsWorkChain(WorkChain):
             include=["code", "basis", "parameters", "metadata"],
         )
 
+        spec.expose_inputs(
+            DMFTCalculation,
+            namespace="dmft",
+            include=["code", "parameters"],
+        )
+
+        spec.expose_inputs(
+            DMFTCalculation,
+            namespace="dmft.converge_mu",
+            include=["adjust_mu", "metadata"],
+        )
+
+        spec.expose_inputs(
+            DMFTCalculation,
+            namespace="dmft.sweep_mu",
+            include=["metadata"],
+        )
+
+        spec.input(
+            "dmft.sweep_mu.parameters",
+            valid_type=orm.Dict,
+            required=False,
+            default=lambda: orm.Dict({}),
+            help="The chemical potential sweep parameters",
+        )
+
         spec.expose_outputs(
             DFTCalculation,
             namespace="dft.leads",
@@ -96,13 +123,23 @@ class CoulombDiamondsWorkChain(WorkChain):
             namespace="hybridization",
         )
 
+        spec.expose_outputs(
+            DMFTCalculation,
+            namespace="dmft.converge_mu",
+        )
+
+        spec.expose_outputs(
+            DMFTCalculation,
+            namespace="dmft.sweep_mu",
+        )
+
         spec.outline(
             cls.run_dft,
             cls.define_scattering_region,
             cls.transform_basis,
             cls.compute_hybridization,
-            # cls.run_dmft_adjust_mu,
-            # cls.run_dmft_sweep_mu,
+            cls.run_dmft_converge_mu,
+            cls.run_dmft_sweep_mu,
             # cls.compute_transmission,
             # cls.compute_current,
             cls.gather_results,
@@ -180,11 +217,75 @@ class CoulombDiamondsWorkChain(WorkChain):
             )
         )
 
-    def run_dmft_adjust_mu(self):
+    def run_dmft_converge_mu(self):
         """docstring"""
+        dmft_converge_mu_inputs = {
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
+            **self.exposed_inputs(
+                DMFTCalculation,
+                namespace="dmft",
+            ),
+            "scattering": {
+                "region": self.ctx.scattering_region,
+                "active": self.inputs.scattering.active,
+            },
+            "hybridization": {
+                "matsubara_hybridization_file": self.ctx.hybridization.outputs.matsubara_hybridization_file,
+                "energies_file": self.ctx.hybridization.outputs.energies_file,
+                "matsubara_energies_file": self.ctx.hybridization.outputs.matsubara_energies_file,
+                "hamiltonian_file": self.ctx.hybridization.outputs.hamiltonian_file,
+                "occupancies_file": self.ctx.hybridization.outputs.occupancies_file,
+            },
+            **self.exposed_inputs(
+                DMFTCalculation,
+                namespace="dmft.converge_mu",
+            ),
+        }
+        return ToContext(
+            dmft_converge_mu=self.submit(
+                DMFTCalculation,
+                **dmft_converge_mu_inputs,
+            )
+        )
 
     def run_dmft_sweep_mu(self):
         """docstring"""
+        dmft_sweep_mu_inputs = {
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
+            **self.exposed_inputs(
+                DMFTCalculation,
+                namespace="dmft",
+            ),
+            "scattering": {
+                "region": self.ctx.scattering_region,
+                "active": self.inputs.scattering.active,
+            },
+            "hybridization": {
+                "matsubara_hybridization_file": self.ctx.hybridization.outputs.matsubara_hybridization_file,
+                "energies_file": self.ctx.hybridization.outputs.energies_file,
+                "matsubara_energies_file": self.ctx.hybridization.outputs.matsubara_energies_file,
+                "hamiltonian_file": self.ctx.hybridization.outputs.hamiltonian_file,
+                "occupancies_file": self.ctx.hybridization.outputs.occupancies_file,
+            },
+            "mu_file": self.ctx.dmft_converge_mu.outputs.mu_file,
+            "sweep": {
+                "parameters": self.inputs.dmft.sweep_mu.parameters,
+            },
+            **self.exposed_inputs(
+                DMFTCalculation,
+                namespace="dmft.sweep_mu",
+            ),
+        }
+        return ToContext(
+            dmft_sweep_mu=self.submit(
+                DMFTCalculation,
+                **dmft_sweep_mu_inputs,
+            )
+        )
 
     def compute_transmission(self):
         """docstring"""
@@ -224,5 +325,21 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.hybridization,
                 HybridizationCalculation,
                 namespace="hybridization",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.dmft_converge_mu,
+                DMFTCalculation,
+                namespace="dmft.converge_mu",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.dmft_sweep_mu,
+                DMFTCalculation,
+                namespace="dmft.sweep_mu",
             )
         )

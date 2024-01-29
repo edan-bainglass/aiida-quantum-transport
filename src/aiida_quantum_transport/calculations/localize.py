@@ -39,8 +39,6 @@ class LocalizationCalculation(CalcJob):
         spec.input(
             "scattering.region",
             valid_type=orm.ArrayData,
-            required=False,
-            default=lambda: orm.ArrayData([]),
             help="The scattering region",
         )
 
