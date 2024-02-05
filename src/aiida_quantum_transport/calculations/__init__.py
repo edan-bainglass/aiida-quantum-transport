@@ -4,6 +4,7 @@ from .dmft import DMFTCalculation
 from .functions import *
 from .hybridize import HybridizationCalculation
 from .localize import LocalizationCalculation
+from .transmission import TransmissionCalculation
 
 __all__ = [
     "CustomCalculation",
@@ -12,4 +13,5 @@ __all__ = [
     "LocalizationCalculation",
     "HybridizationCalculation",
     "DMFTCalculation",
+    "TransmissionCalculation",
 ]

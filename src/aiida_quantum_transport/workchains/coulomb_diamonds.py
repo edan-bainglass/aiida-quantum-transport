@@ -10,6 +10,7 @@ from aiida_quantum_transport.calculations import (
     DMFTCalculation,
     HybridizationCalculation,
     LocalizationCalculation,
+    TransmissionCalculation,
     get_scattering_region,
 )
 
@@ -103,6 +104,12 @@ class CoulombDiamondsWorkChain(WorkChain):
             help="The chemical potential sweep parameters",
         )
 
+        spec.expose_inputs(
+            TransmissionCalculation,
+            namespace="transmission",
+            include=["code", "metadata"],
+        )
+
         spec.expose_outputs(
             DFTCalculation,
             namespace="dft.leads",
@@ -133,6 +140,11 @@ class CoulombDiamondsWorkChain(WorkChain):
             namespace="dmft.sweep_mu",
         )
 
+        spec.expose_outputs(
+            TransmissionCalculation,
+            namespace="transmission",
+        )
+
         spec.outline(
             cls.run_dft,
             cls.define_scattering_region,
@@ -140,7 +152,7 @@ class CoulombDiamondsWorkChain(WorkChain):
             cls.compute_hybridization,
             cls.run_dmft_converge_mu,
             cls.run_dmft_sweep_mu,
-            # cls.compute_transmission,
+            cls.compute_transmission,
             # cls.compute_current,
             cls.gather_results,
         )
@@ -220,13 +232,13 @@ class CoulombDiamondsWorkChain(WorkChain):
     def run_dmft_converge_mu(self):
         """docstring"""
         dmft_converge_mu_inputs = {
-            "device": {
-                "structure": self.inputs.dft.device.structure,
-            },
             **self.exposed_inputs(
                 DMFTCalculation,
                 namespace="dmft",
             ),
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
             "scattering": {
                 "region": self.ctx.scattering_region,
                 "active": self.inputs.scattering.active,
@@ -253,13 +265,13 @@ class CoulombDiamondsWorkChain(WorkChain):
     def run_dmft_sweep_mu(self):
         """docstring"""
         dmft_sweep_mu_inputs = {
-            "device": {
-                "structure": self.inputs.dft.device.structure,
-            },
             **self.exposed_inputs(
                 DMFTCalculation,
                 namespace="dmft",
             ),
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
             "scattering": {
                 "region": self.ctx.scattering_region,
                 "active": self.inputs.scattering.active,
@@ -289,6 +301,35 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def compute_transmission(self):
         """docstring"""
+        transmission_inputs = {
+            "basis": self.ctx.hybridization.inputs.basis,
+            "parameters": self.ctx.hybridization.inputs.parameters,
+            "leads": {
+                "structure": self.inputs.dft.leads.structure,
+                "kpoints": self.inputs.dft.leads.kpoints,
+                "hamiltonian_file": self.ctx.dft_leads.outputs.hamiltonian_file,
+            },
+            "device": {
+                "structure": self.inputs.dft.device.structure,
+            },
+            "localization": {
+                "index_file": self.ctx.localization.outputs.index_file,
+                "hamiltonian_file": self.ctx.localization.outputs.hamiltonian_file,
+            },
+            "dmft": {
+                "sigma_folder": self.ctx.dmft_sweep_mu.outputs.sigma_folder,
+            },
+            **self.exposed_inputs(
+                TransmissionCalculation,
+                namespace="transmission",
+            ),
+        }
+        return ToContext(
+            transmission=self.submit(
+                TransmissionCalculation,
+                **transmission_inputs,
+            )
+        )
 
     def compute_current(self):
         """docstring"""
@@ -341,5 +382,13 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.dmft_sweep_mu,
                 DMFTCalculation,
                 namespace="dmft.sweep_mu",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.transmission,
+                TransmissionCalculation,
+                namespace="transmission",
             )
         )

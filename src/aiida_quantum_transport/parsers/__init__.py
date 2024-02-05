@@ -3,6 +3,7 @@ from .dft import DFTParser
 from .dmft import DMFTParser
 from .hybridize import HybridizationParser
 from .localize import LocalizationParser
+from .transmission import TransmissionParser
 
 __all__ = [
     "CustomParser",
@@ -10,4 +11,5 @@ __all__ = [
     "LocalizationParser",
     "HybridizationParser",
     "DMFTParser",
+    "TransmissionParser",
 ]
