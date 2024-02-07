@@ -13,16 +13,22 @@ class DMFTParser(Parser):
     def parse(self, **kwargs) -> ExitCode | None:
         """docstring"""
 
-        path = Path(self.node.get_remote_workdir()) / "delta_folder"
-        self.out("delta_folder", orm.FolderData(tree=path))
+        try:
+            with self.retrieved.as_path() as retrieved_path:
+                root = Path(retrieved_path)
 
-        path = Path(self.node.get_remote_workdir()) / "sigma_folder"
-        self.out("sigma_folder", orm.FolderData(tree=path))
+                path = root / "delta_folder"
+                self.out("delta_folder", orm.FolderData(tree=path))
 
-        adjust_mu: orm.Bool = self.node.inputs.adjust_mu
+                path = root / "sigma_folder"
+                self.out("sigma_folder", orm.FolderData(tree=path))
 
-        if adjust_mu.value:
-            path = Path(self.node.get_remote_workdir()) / "mu.txt"
-            self.out("mu_file", orm.SinglefileData(path))
+                adjust_mu: orm.Bool = self.node.inputs.adjust_mu
+
+                if adjust_mu.value:
+                    path = root / "mu.txt"
+                    self.out("mu_file", orm.SinglefileData(path))
+        except OSError:
+            return self.exit_codes.ERROR_ACCESSING_OUTPUT_FILE
 
         return None

@@ -18,9 +18,12 @@ class LocalizationParser(Parser):
     def parse(self, **kwargs) -> ExitCode | None:
         """docstring"""
 
-        for label, filename in self._OUTPUT_FILE_MAPPING.items():
-            path = Path(self.node.get_remote_workdir()) / filename
-            output_label = f"{label}_file"
-            self.out(output_label, orm.SinglefileData(path))
+        try:
+            with self.retrieved.as_path() as retrieved_path:
+                for label, filename in self._OUTPUT_FILE_MAPPING.items():
+                    path = Path(retrieved_path) / filename
+                    self.out(f"{label}_file", orm.SinglefileData(path))
+        except OSError:
+            return self.exit_codes.ERROR_ACCESSING_OUTPUT_FILE
 
         return None

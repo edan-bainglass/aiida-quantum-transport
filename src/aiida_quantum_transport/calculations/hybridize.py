@@ -127,6 +127,12 @@ class HybridizationCalculation(CalcJob):
             help="The occupancies file",
         )
 
+        spec.exit_code(
+            400,
+            "ERROR_ACCESSING_OUTPUT_FILE",
+            "an issue occurred while accessing an expected retrieved file",
+        )
+
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
