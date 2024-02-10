@@ -6,6 +6,7 @@ from aiida import orm
 from aiida.engine import ToContext, WorkChain
 
 from aiida_quantum_transport.calculations import (
+    CurrentCalculation,
     DFTCalculation,
     DMFTCalculation,
     HybridizationCalculation,
@@ -110,6 +111,12 @@ class CoulombDiamondsWorkChain(WorkChain):
             include=["code", "metadata"],
         )
 
+        spec.expose_inputs(
+            CurrentCalculation,
+            namespace="current",
+            include=["code", "parameters", "metadata"],
+        )
+
         spec.expose_outputs(
             DFTCalculation,
             namespace="dft.leads",
@@ -145,6 +152,11 @@ class CoulombDiamondsWorkChain(WorkChain):
             namespace="transmission",
         )
 
+        spec.expose_outputs(
+            CurrentCalculation,
+            namespace="current",
+        )
+
         spec.outline(
             cls.run_dft,
             cls.define_scattering_region,
@@ -153,7 +165,7 @@ class CoulombDiamondsWorkChain(WorkChain):
             cls.run_dmft_converge_mu,
             cls.run_dmft_sweep_mu,
             cls.compute_transmission,
-            # cls.compute_current,
+            cls.compute_current,
             cls.gather_results,
         )
 
@@ -333,6 +345,25 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def compute_current(self):
         """docstring"""
+        current_inputs = {
+            "parameters": self.ctx.hybridization.inputs.parameters,
+            "hybridization": {
+                "energies_file": self.ctx.hybridization.outputs.energies_file,
+            },
+            "transmission": {
+                "transmission_folder": self.ctx.transmission.outputs.transmission_folder,
+            },
+            **self.exposed_inputs(
+                CurrentCalculation,
+                namespace="current",
+            ),
+        }
+        return ToContext(
+            current=self.submit(
+                CurrentCalculation,
+                **current_inputs,
+            )
+        )
 
     def gather_results(self):
         """docstring"""
@@ -390,5 +421,13 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.transmission,
                 TransmissionCalculation,
                 namespace="transmission",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.current,
+                CurrentCalculation,
+                namespace="current",
             )
         )

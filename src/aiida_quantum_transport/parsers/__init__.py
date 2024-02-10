@@ -1,3 +1,4 @@
+from .current import CurrentParser
 from .custom import CustomParser
 from .dft import DFTParser
 from .dmft import DMFTParser
@@ -12,4 +13,5 @@ __all__ = [
     "HybridizationParser",
     "DMFTParser",
     "TransmissionParser",
+    "CurrentParser",
 ]

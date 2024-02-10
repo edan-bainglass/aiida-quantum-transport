@@ -1,3 +1,4 @@
+from .current import CurrentCalculation
 from .custom import CustomCalculation
 from .dft import DFTCalculation
 from .dmft import DMFTCalculation
@@ -14,4 +15,5 @@ __all__ = [
     "HybridizationCalculation",
     "DMFTCalculation",
     "TransmissionCalculation",
+    "CurrentCalculation",
 ]
