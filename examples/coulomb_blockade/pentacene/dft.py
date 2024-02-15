@@ -14,7 +14,6 @@ def run_gpaw(
     structure: Atoms,
     kpoints: np.ndarray,
     parameters: dict,
-    write_nao=False,
 ) -> None:
     """docstring"""
 
@@ -35,9 +34,6 @@ def run_gpaw(
         H_kMM = H_skMM[0]
         H_kMM -= fermi * S_kMM
         np.save("hs.npy", (H_kMM, S_kMM))
-
-    if write_nao:
-        np.save("nao.npy", [setup.nao for setup in calc.wfs.setups])
 
 
 if __name__ == "__main__":
@@ -63,12 +59,6 @@ if __name__ == "__main__":
         help="name of pickled parameters file",
     )
 
-    parser.add_argument(
-        "-wn",
-        "--write-nao",
-        help="if naos should be written to file",
-    )
-
     args = parser.parse_args()
 
     with open(args.structure_filename, "rb") as file:
@@ -80,4 +70,4 @@ if __name__ == "__main__":
     with open(args.parameters_filename, "rb") as file:
         parameters = pickle.load(file)
 
-    run_gpaw(structure, kpoints, parameters, args.write_nao)
+    run_gpaw(structure, kpoints, parameters)
