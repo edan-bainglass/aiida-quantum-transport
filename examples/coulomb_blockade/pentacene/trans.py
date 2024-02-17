@@ -27,9 +27,9 @@ def compute_transmission(
     leads_kpoints_grid: list,
     H_leads: np.ndarray,
     S_leads: np.ndarray,
-    H_scattering: np.ndarray,
-    S_scattering: np.ndarray,
-    localization_index: np.ndarray,
+    H_los: np.ndarray,
+    S_los: np.ndarray,
+    los_indices: np.ndarray,
     basis: dict,
     solver="dyson",
     E_step=1e-2,
@@ -49,8 +49,8 @@ def compute_transmission(
     basis_leads = Basis.from_dictionary(leads, basis)
     basis_device = Basis.from_dictionary(device, basis)
 
-    H_scattering = H_scattering.astype(complex)
-    S_scattering = S_scattering.astype(complex)
+    H_los = H_los.astype(complex)
+    S_los = S_los.astype(complex)
 
     h_pl_ii, s_pl_ii, h_pl_ij, s_pl_ij = map(
         lambda m: m[0],
@@ -58,12 +58,12 @@ def compute_transmission(
             H_leads,
             S_leads,
             leads_kpoints_grid,
-            align=(0, H_scattering[0, 0, 0]),
+            align=(0, H_los[0, 0, 0]),
         )[1:],
     )
 
-    remove_pbc(basis_device, H_scattering)
-    remove_pbc(basis_device, S_scattering)
+    remove_pbc(basis_device, H_los)
+    remove_pbc(basis_device, S_los)
 
     se = [
         LeadSelfEnergy((h_pl_ii, s_pl_ii), (h_pl_ij, s_pl_ij)),
@@ -80,11 +80,9 @@ def compute_transmission(
 
     hs_list_ii, hs_list_ij = graph_partition.tridiagonalize(
         nodes,
-        H_scattering[0],
-        S_scattering[0],
+        H_los[0],
+        S_los[0],
     )
-
-    energies = np.arange(E_min, E_max + E_step / 2.0, E_step).round(7)
 
     gf = greenfunction.GreenFunction(
         hs_list_ii,
@@ -94,7 +92,9 @@ def compute_transmission(
         eta=eta,
     )
 
-    i1 = localization_index - nodes[1]
+    energies = np.arange(E_min, E_max + E_step / 2.0, E_step).round(7)
+
+    i1 = los_indices - nodes[1]
     s1 = hs_list_ii[1][1]
 
     class DataSelfEnergy(BaseDataSelfEnergy):

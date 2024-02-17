@@ -27,6 +27,7 @@ def fermidistribution(energy, kt):
         else:
             return (energy / 2.0 <= 0).astype(int)
     else:
+        # TODO check for large exponents (return 0 if so)
         return 1.0 / (1.0 + np.exp(energy / kt))
 
 

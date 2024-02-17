@@ -35,7 +35,7 @@ def run_dmft(
     dmu_min=0.0,
     dmu_max=0.9,
     dmu_step=1.0,
-    inner_max_iter=10,
+    inner_max_iter=1000,  # TODO check restart feature
     outer_max_iter=1000,
 ) -> None:
     """docstring"""
@@ -83,10 +83,10 @@ def run_dmft(
     gfloc = Gfloc(H - DC, S, HybMats, idx_neq, idx_inv)
 
     number_of_impurities = gfloc.idx_neq.size
-    gfimp: list[Gfimp] = []
+    gfimp_list: list[Gfimp] = []
 
     for i in range(number_of_impurities):
-        gfimp.append(
+        gfimp_list.append(
             Gfimp(
                 number_of_baths,
                 matsubara_energies.size,
@@ -95,7 +95,7 @@ def run_dmft(
             )
         )
 
-    gfimp = nanoGfimp(gfimp)
+    gfimp = nanoGfimp(gfimp_list)
 
     occupancies = occupancies[gfloc.idx_neq]
     dmft = DMFT(
