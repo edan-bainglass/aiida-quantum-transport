@@ -36,9 +36,15 @@ def compute_transmission(
     E_min=-3.0,
     E_max=3.0,
     eta=1e-4,
-    sigma_folder_name="sigma_folder",
+    sigma_folder_path="sigma_folder",
 ) -> None:
     """docstring"""
+
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
+
+    transmission_dir = output_dir / TRANSMISSION_DIR
+    transmission_dir.mkdir(exist_ok=True)
 
     basis_leads = Basis.from_dictionary(leads, basis)
     basis_device = Basis.from_dictionary(device, basis)
@@ -97,10 +103,7 @@ def compute_transmission(
         def retarded(self, energy):
             return expand(s1, super().retarded(energy), i1)
 
-    def load(filename):
-        return DataSelfEnergy(energies, np.load(filename))
-
-    def run(filename: str):
+    def run(filepath: Path):
         gd = GridDesc(energies, 1, float)
         T = np.empty(gd.energies.size)
 
@@ -110,15 +113,12 @@ def compute_transmission(
         T = gd.gather_energies(T)
 
         if comm.rank == 0:
-            np.save(f"{TRANSMISSION_DIR}/{filename}", T.real)
+            np.save(transmission_dir / filepath, T.real)
 
-    if comm.rank == 0:
-        Path(TRANSMISSION_DIR).mkdir(exist_ok=True)
-
-    for filename in Path(sigma_folder_name).glob("dmu_*"):
-        se[2] = load(filename)
+    for filename in Path(sigma_folder_path).glob("dmu_*"):
+        se[2] = DataSelfEnergy(energies, np.load(filename))
         gf.selfenergies.append((1, se[2]))
-        run(filename=filename.as_posix())
+        run(filename)
         gf.selfenergies.pop()
 
 
@@ -159,53 +159,52 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-lhf",
-        "--leads-hamiltonian-filename",
-        help="name of leads hamiltonian file",
+        "--leads-hamiltonian-filepath",
+        help="path to hamiltonian file",
     )
 
     parser.add_argument(
-        "-shf",
-        "--localized-hamiltonian-filename",
-        help="name of localized hamiltonian file",
+        "-lohf",
+        "--los-hamiltonian-filepath",
+        help="path to local orbitals hamiltonian file",
     )
 
     parser.add_argument(
-        "-lif",
-        "--localization-index-filename",
-        help="name of localization index file",
+        "-loif",
+        "--los-index-filepath",
+        help="path to local orbitals index file",
     )
 
     parser.add_argument(
-        "-sf",
-        "--sigma-folder-name",
-        help="name of folder containing self-energy files",
+        "-sfp",
+        "--sigma-folder-path",
+        help="path to folder containing self-energy files",
     )
 
     args = parser.parse_args()
 
-    with open(args.leads_structure_filename, "rb") as file:
+    input_dir = Path("inputs")
+
+    with open(input_dir / args.leads_structure_filename, "rb") as file:
         leads = pickle.load(file)
 
-    with open(args.device_structure_filename, "rb") as file:
+    with open(input_dir / args.device_structure_filename, "rb") as file:
         device = pickle.load(file)
 
-    with open(args.leads_kpoints_filename, "rb") as file:
+    with open(input_dir / args.leads_kpoints_filename, "rb") as file:
         leads_kpoints = pickle.load(file)
 
-    with open(args.leads_hamiltonian_filename, "rb") as file:
-        H_leads, S_leads = np.load(file)
-
-    with open(args.localized_hamiltonian_filename, "rb") as file:
-        H_scattering, S_scattering = np.load(file)
-
-    with open(args.localization_index_filename, "rb") as file:
-        localization_index = np.load(file)
-
-    with open(args.basis_filename, "rb") as file:
+    with open(input_dir / args.basis_filename, "rb") as file:
         basis = pickle.load(file)
 
-    with open(args.parameters_filename, "rb") as file:
+    with open(input_dir / args.parameters_filename, "rb") as file:
         parameters = pickle.load(file)
+
+    H_leads, S_leads = np.load(args.leads_hamiltonian_filepath)
+
+    H_scattering, S_scattering = np.load(args.los_hamiltonian_filepath)
+
+    localization_index = np.load(args.los_index_filepath)
 
     compute_transmission(
         leads,
@@ -218,5 +217,5 @@ if __name__ == "__main__":
         localization_index,
         basis,
         **parameters,
-        sigma_folder_name=args.sigma_folder_name,
+        sigma_folder_path=args.sigma_folder_path,
     )

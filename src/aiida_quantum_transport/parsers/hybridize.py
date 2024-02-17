@@ -25,8 +25,9 @@ class HybridizationParser(Parser):
 
         try:
             with self.retrieved.as_path() as retrieved_path:
+                results_dir = Path(retrieved_path) / "results"
                 for filename in self._OUTPUT_FILES:
-                    path = Path(retrieved_path) / filename
+                    path = results_dir / filename
                     prefix = filename.split(".")[0]
                     self.out(f"{prefix}_file", orm.SinglefileData(path))
         except OSError:

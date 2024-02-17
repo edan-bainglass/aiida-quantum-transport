@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -82,40 +83,57 @@ class LocalizationCalculation(CalcJob):
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
-        pickled_scattering_region_filename = "scatt.npy"
-        with folder.open(pickled_scattering_region_filename, "wb") as file:
-            region: orm.ArrayData = self.inputs.scattering.region
-            np.save(file, region.get_array("default"))
+        temp_dir = Path(folder.abspath)
+        input_dir = Path("inputs")
+        temp_input_dir = temp_dir / input_dir
+        temp_input_dir.mkdir()
 
-        pickled_active_species_filename = "active.pkl"
-        with folder.open(pickled_active_species_filename, "wb") as file:
+        active_species_filename = "active.pkl"
+        with open(temp_input_dir / active_species_filename, "wb") as file:
             active: orm.Dict = self.inputs.scattering.active
             pickle.dump(active.get_dict(), file)
 
-        restart_file: orm.SinglefileData = self.inputs.restart_file
+        precomputed_input_dir = input_dir / "precomputed"
+        temp_precomputed_input_dir = temp_dir / precomputed_input_dir
+        temp_precomputed_input_dir.mkdir()
+        restart_filename = "restart.gpw"
+        restart_filepath = (
+            precomputed_input_dir / f"device_{restart_filename}"
+        ).as_posix()
+        scattering_region_filename = "scatt.npy"
+        scattering_region_filepath = (
+            precomputed_input_dir / scattering_region_filename
+        ).as_posix()
+
+        region: orm.ArrayData = self.inputs.scattering.region
+        np.save(
+            temp_precomputed_input_dir / scattering_region_filename,
+            region.get_array("default"),
+        )
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
-            "--restart-filename",
-            restart_file.filename,
-            "--scattering-region-filename",
-            pickled_scattering_region_filename,
+            "--restart-filepath",
+            restart_filepath,
             "--active-species-filename",
-            pickled_active_species_filename,
-            "--lowdin",
-            str(self.inputs.lowdin.value),
+            active_species_filename,
+            "--scattering-region-filepath",
+            scattering_region_filepath,
         ]
+
+        if self.inputs.lowdin:
+            codeinfo.cmdline_params.append("--lowdin")
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = [
             (
-                restart_file.uuid,
-                restart_file.filename,
-                restart_file.filename,
+                self.inputs.restart_file.uuid,
+                self.inputs.restart_file.filename,
+                restart_filepath,
             )
         ]
-        calcinfo.retrieve_list = ["idx_los.npy", "hs_los.npy"]
+        calcinfo.retrieve_list = ["results"]
 
         return calcinfo

@@ -66,13 +66,16 @@ def compute_current(
     V_max=2.5,
     dV=0.1,
     temperature=9,
-    transmission_folder_name="transmission_folder",
+    transmission_folder_path="transmission_folder",
 ) -> None:
     """docstring"""
 
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
+
     files = []
     for file in sorted(
-        Path(transmission_folder_name).iterdir(),
+        Path(transmission_folder_path).iterdir(),
         key=natural_sort,
     ):
         files.append(file)
@@ -91,8 +94,8 @@ def compute_current(
 
     derivative = np.asarray([numerical_derivative(bias, i) for i in current])
 
-    np.save("current.npy", current)
-    np.save("derivative.npy", derivative)
+    np.save(output_dir / "current.npy", current)
+    np.save(output_dir / "derivative.npy", derivative)
 
 
 if __name__ == "__main__":
@@ -108,26 +111,27 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-ef",
-        "--energies-filename",
-        help="name of energies file",
+        "--energies-filepath",
+        help="path to energies file",
     )
 
     parser.add_argument(
-        "-tf",
-        "--transmission-folder-name",
-        help="name of folder containing transmission files",
+        "-tfp",
+        "--transmission-folder-path",
+        help="path to folder containing transmission files",
     )
 
     args = parser.parse_args()
 
-    with open(args.parameters_filename, "rb") as file:
+    input_dir = Path("inputs")
+
+    with open(input_dir / args.parameters_filename, "rb") as file:
         parameters = pickle.load(file)
 
-    with open(args.energies_filename, "rb") as file:
-        energies = np.load(file)
+    energies = np.load(args.energies_filepath)
 
     compute_current(
         energies,
-        transmission_folder_name=args.transmission_folder_name,
+        transmission_folder_path=args.transmission_folder_path,
         **parameters,
     )

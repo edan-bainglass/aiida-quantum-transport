@@ -15,7 +15,7 @@ class TransmissionParser(Parser):
 
         try:
             with self.retrieved.as_path() as retrieved_path:
-                path = Path(retrieved_path) / "transmission_folder"
+                path = Path(retrieved_path) / "results" / "transmission_folder"
                 self.out("transmission_folder", orm.FolderData(tree=path))
         except OSError:
             return self.exit_codes.ERROR_ACCESSING_OUTPUT_FILE

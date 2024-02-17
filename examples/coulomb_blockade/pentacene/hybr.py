@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
+from __future__ import annotations
+
 import pickle
 from argparse import ArgumentParser
+from pathlib import Path
 
 import numpy as np
 from ase.atoms import Atoms
@@ -37,6 +40,9 @@ def hybridize_orbitals(
     beta=70.0,
 ) -> None:
     """docstring"""
+
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
 
     basis_leads = Basis.from_dictionary(leads, basis)
     basis_device = Basis.from_dictionary(device, basis)
@@ -98,17 +104,16 @@ def hybridize_orbitals(
         D[e] = gfp.get_dos(energy)
 
     D = gd.gather_energies(D)
-    gd.write(HB, "hybridization.bin")
+    gd.write(HB, f"{output_dir}/hybridization.bin")
+
+    Heff = (hyb.H + hyb.retarded(0.0)).real
 
     if comm.rank == 0:
-        np.save("partial_dos.npy", D.real)
-        np.save("energies.npy", energies + 1.0j * eta)
-
-    if comm.rank == 0:
-        Heff = (hyb.H + hyb.retarded(0.0)).real
-        np.save("hamiltonian.npy", hyb.H)
-        np.save("hamiltonian_effective.npy", Heff)
-        np.save("eigenvalues.npy", eigvalsh(Heff, gfp.S))
+        np.save(output_dir / "partial_dos.npy", D.real)
+        np.save(output_dir / "energies.npy", energies + 1.0j * eta)
+        np.save(output_dir / "hamiltonian.npy", hyb.H)
+        np.save(output_dir / "hamiltonian_effective.npy", Heff)
+        np.save(output_dir / "eigenvalues.npy", eigvalsh(Heff, gfp.S))
 
     # Matsubara
     gf.eta = 0.0
@@ -121,11 +126,11 @@ def hybridize_orbitals(
     for e, energy in enumerate(gd.energies):
         HB[e] = hyb.retarded(energy)
 
-    gd.write(HB, "matsubara_hybridization.bin")
+    gd.write(HB, f"{output_dir}/matsubara_hybridization.bin")
 
     if comm.rank == 0:
-        np.save("occupancies.npy", get_ao_charge(gfp))
-        np.save("matsubara_energies.npy", energies)
+        np.save(output_dir / "occupancies.npy", get_ao_charge(gfp))
+        np.save(output_dir / "matsubara_energies.npy", energies)
 
 
 if __name__ == "__main__":
@@ -152,24 +157,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-lhf",
-        "--leads-hamiltonian-filename",
-        help="name of leads hamiltonian file",
-    )
-
-    parser.add_argument(
-        "-shf",
-        "--localized-hamiltonian-filename",
-        help="name of localized hamiltonian file",
-    )
-
-    parser.add_argument(
-        "-lif",
-        "--localization-index-filename",
-        help="name of localization index file",
-    )
-
-    parser.add_argument(
         "-bf",
         "--basis-filename",
         help="name of basis file",
@@ -181,31 +168,48 @@ if __name__ == "__main__":
         help="name of parameters file",
     )
 
+    parser.add_argument(
+        "-lhf",
+        "--leads-hamiltonian-filepath",
+        help="path to hamiltonian file",
+    )
+
+    parser.add_argument(
+        "-lohf",
+        "--los-hamiltonian-filepath",
+        help="path to local orbitals hamiltonian file",
+    )
+
+    parser.add_argument(
+        "-loif",
+        "--los-index-filepath",
+        help="path to local orbitals index file",
+    )
+
     args = parser.parse_args()
 
-    with open(args.leads_structure_filename, "rb") as file:
+    input_dir = Path("inputs")
+
+    with open(input_dir / args.leads_structure_filename, "rb") as file:
         leads = pickle.load(file)
 
-    with open(args.device_structure_filename, "rb") as file:
+    with open(input_dir / args.device_structure_filename, "rb") as file:
         device = pickle.load(file)
 
-    with open(args.leads_kpoints_filename, "rb") as file:
+    with open(input_dir / args.leads_kpoints_filename, "rb") as file:
         leads_kpoints = pickle.load(file)
 
-    with open(args.leads_hamiltonian_filename, "rb") as file:
-        H_leads, S_leads = np.load(file)
-
-    with open(args.localized_hamiltonian_filename, "rb") as file:
-        H_scattering, S_scattering = np.load(file)
-
-    with open(args.localization_index_filename, "rb") as file:
-        localization_index = np.load(file)
-
-    with open(args.basis_filename, "rb") as file:
+    with open(input_dir / args.basis_filename, "rb") as file:
         basis = pickle.load(file)
 
-    with open(args.parameters_filename, "rb") as file:
+    with open(input_dir / args.parameters_filename, "rb") as file:
         parameters = pickle.load(file)
+
+    H_leads, S_leads = np.load(args.leads_hamiltonian_filepath)
+
+    H_scattering, S_scattering = np.load(args.los_hamiltonian_filepath)
+
+    localization_index = np.load(args.los_index_filepath)
 
     hybridize_orbitals(
         leads,

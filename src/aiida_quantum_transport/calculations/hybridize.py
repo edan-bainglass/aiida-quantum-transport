@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from aiida import orm
@@ -135,50 +136,67 @@ class HybridizationCalculation(CalcJob):
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
-        pickled_leads_structure_filename = "leads_structure.pkl"
-        with folder.open(pickled_leads_structure_filename, "wb") as file:
+        temp_dir = Path(folder.abspath)
+        input_dir = Path("inputs")
+        temp_input_dir = temp_dir / input_dir
+        temp_input_dir.mkdir()
+
+        leads_structure_filename = "leads_structure.pkl"
+        with open(temp_input_dir / leads_structure_filename, "wb") as file:
             leads: orm.StructureData = self.inputs.leads.structure
             pickle.dump(leads.get_ase(), file)
 
-        pickled_device_structure_filename = "device_structure.pkl"
-        with folder.open(pickled_device_structure_filename, "wb") as file:
+        device_structure_filename = "device_structure.pkl"
+        with open(temp_input_dir / device_structure_filename, "wb") as file:
             device: orm.StructureData = self.inputs.device.structure
             pickle.dump(device.get_ase(), file)
 
-        pickled_leads_kpoints_filename = "leads_kpoints.pkl"
-        with folder.open(pickled_leads_kpoints_filename, "wb") as file:
+        leads_kpoints_filename = "leads_kpoints.pkl"
+        with open(temp_input_dir / leads_kpoints_filename, "wb") as file:
             kpoints: orm.KpointsData = self.inputs.leads.kpoints
             pickle.dump(kpoints.get_kpoints_mesh()[0], file)
 
-        pickled_basis_filename = "basis.pkl"
-        with folder.open(pickled_basis_filename, "wb") as file:
+        basis_filename = "basis.pkl"
+        with open(temp_input_dir / basis_filename, "wb") as file:
             basis: orm.Dict = self.inputs.basis
             pickle.dump(basis.get_dict(), file)
 
-        pickled_parameters_filename = "parameters.pkl"
-        with folder.open(pickled_parameters_filename, "wb") as file:
+        parameters_filename = "parameters.pkl"
+        with open(temp_input_dir / parameters_filename, "wb") as file:
             parameters: orm.Dict = self.inputs.parameters
             pickle.dump(parameters.get_dict(), file)
+
+        precomputed_input_dir = input_dir / "precomputed"
+        (temp_dir / precomputed_input_dir).mkdir()
+        leads_hamiltonian_filepath = (
+            precomputed_input_dir / "hs_leads.npy"
+        ).as_posix()
+        los_hamiltonian_filepath = (
+            precomputed_input_dir / "hs_los.npy"
+        ).as_posix()
+        los_indices_filepath = (
+            precomputed_input_dir / "los_indices.npy"
+        ).as_posix()
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
             "--leads-structure-filename",
-            pickled_leads_structure_filename,
+            leads_structure_filename,
             "--device-structure-filename",
-            pickled_device_structure_filename,
+            device_structure_filename,
             "--leads-kpoints-filename",
-            pickled_leads_kpoints_filename,
-            "--leads-hamiltonian-filename",
-            f"leads_{self.inputs.leads.hamiltonian_file.filename}",
-            "--localized-hamiltonian-filename",
-            f"device_{self.inputs.localization.hamiltonian_file.filename}",
-            "--localization-index-filename",
-            self.inputs.localization.index_file.filename,
+            leads_kpoints_filename,
             "--basis-filename",
-            pickled_basis_filename,
+            basis_filename,
             "--parameters-filename",
-            pickled_parameters_filename,
+            parameters_filename,
+            "--leads-hamiltonian-filepath",
+            leads_hamiltonian_filepath,
+            "--los-hamiltonian-filepath",
+            los_hamiltonian_filepath,
+            "--los-index-filepath",
+            los_indices_filepath,
         ]
 
         calcinfo = CalcInfo()
@@ -187,27 +205,19 @@ class HybridizationCalculation(CalcJob):
             (
                 self.inputs.leads.hamiltonian_file.uuid,
                 self.inputs.leads.hamiltonian_file.filename,
-                f"leads_{self.inputs.leads.hamiltonian_file.filename}",
+                leads_hamiltonian_filepath,
             ),
             (
                 self.inputs.localization.hamiltonian_file.uuid,
                 self.inputs.localization.hamiltonian_file.filename,
-                f"device_{self.inputs.localization.hamiltonian_file.filename}",
+                los_hamiltonian_filepath,
             ),
             (
                 self.inputs.localization.index_file.uuid,
                 self.inputs.localization.index_file.filename,
-                self.inputs.localization.index_file.filename,
+                los_indices_filepath,
             ),
         ]
-        calcinfo.retrieve_list = [
-            "hybridization.bin",
-            "energies.npy",
-            "hamiltonian.npy",
-            "eigenvalues.npy",
-            "matsubara_hybridization.bin",
-            "matsubara_energies.npy",
-            "occupancies.npy",
-        ]
+        calcinfo.retrieve_list = ["results"]
 
         return calcinfo

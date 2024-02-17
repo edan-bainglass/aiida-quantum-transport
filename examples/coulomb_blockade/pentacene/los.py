@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import pickle
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
+from pathlib import Path
 
 import numpy as np
 from gpaw import restart
@@ -13,14 +14,17 @@ from qtpyt.lo.tools import lowdin_rotation, rotate_matrix, subdiagonalize_atoms
 
 
 def localize_orbitals(
-    restart_filename: str,
+    restart_filepath: str,
     scattering_region: np.ndarray,
     active: dict,
-    lowdin: bool,
+    lowdin=False,
 ) -> None:
     """docstring"""
 
-    atoms, calc = restart(restart_filename, txt=None)
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
+
+    atoms, calc = restart(restart_filepath, txt=None)
     lcao = LCAOwrap(calc)
 
     nao_a = np.array([setup.nao for setup in calc.wfs.setups])
@@ -51,8 +55,8 @@ def localize_orbitals(
         H = rotate_matrix(H, Ulow)
         S = rotate_matrix(S, Ulow)
 
-    np.save("idx_los.npy", index_p[index_c])
-    np.save("hs_los.npy", (H[None, ...], S[None, ...]))
+    np.save(output_dir / "idx_los.npy", index_p[index_c])
+    np.save(output_dir / "hs_los.npy", (H[None, ...], S[None, ...]))
 
 
 if __name__ == "__main__":
@@ -62,14 +66,8 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "-rfp",
-        "--restart-filename",
-        help="name of gpaw restart file",
-    )
-
-    parser.add_argument(
-        "-srf",
-        "--scattering-region-filename",
-        help="name of pickled scattering region file",
+        "--restart-filepath",
+        help="path to gpaw restart file",
     )
 
     parser.add_argument(
@@ -79,18 +77,30 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-srf",
+        "--scattering-region-filepath",
+        help="path to scattering region file",
+    )
+
+    parser.add_argument(
         "-l",
         "--lowdin",
-        type=bool,
+        action=BooleanOptionalAction,
         help="if lowdin rotation should be used",
     )
 
     args = parser.parse_args()
 
-    with open(args.scattering_region_filename, "rb") as file:
-        region = np.load(file)
+    input_dir = Path("inputs")
 
-    with open(args.active_species_filename, "rb") as file:
+    with open(input_dir / args.active_species_filename, "rb") as file:
         active = pickle.load(file)
 
-    localize_orbitals(args.restart_filename, region, active, args.lowdin)
+    region = np.load(args.scattering_region_filepath)
+
+    localize_orbitals(
+        args.restart_filepath,
+        region,
+        active,
+        lowdin=args.lowdin or False,
+    )

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -140,56 +141,81 @@ class DMFTCalculation(CalcJob):
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
-        pickled_device_structure_filename = "device_structure.pkl"
-        with folder.open(pickled_device_structure_filename, "wb") as file:
+        temp_dir = Path(folder.abspath)
+        input_dir = Path("inputs")
+        temp_input_dir = temp_dir / input_dir
+        temp_input_dir.mkdir()
+
+        device_structure_filename = "device_structure.pkl"
+        with open(temp_input_dir / device_structure_filename, "wb") as file:
             device: orm.StructureData = self.inputs.device.structure
             pickle.dump(device.get_ase(), file)
 
-        pickled_scattering_region_filename = "scatt.npy"
-        with folder.open(pickled_scattering_region_filename, "wb") as file:
-            region: orm.ArrayData = self.inputs.scattering.region
-            np.save(file, region.get_array("default"))
-
-        pickled_active_species_filename = "active.pkl"
-        with folder.open(pickled_active_species_filename, "wb") as file:
+        active_species_filename = "active.pkl"
+        with open(temp_input_dir / active_species_filename, "wb") as file:
             active: orm.Dict = self.inputs.scattering.active
             pickle.dump(active.get_dict(), file)
 
-        pickled_parameters_filename = "parameters.pkl"
-        with folder.open(pickled_parameters_filename, "wb") as file:
+        parameters_filename = "parameters.pkl"
+        with open(temp_input_dir / parameters_filename, "wb") as file:
             parameters: orm.Dict = self.inputs.parameters
             pickle.dump(parameters.get_dict(), file)
 
-        pickled_sweep_paramters_filename = "sweep_parameters.pkl"
-        with folder.open(pickled_sweep_paramters_filename, "wb") as file:
+        sweep_paramters_filename = "sweep_parameters.pkl"
+        with open(temp_input_dir / sweep_paramters_filename, "wb") as file:
             sweep_parameters: orm.Dict = self.inputs.sweep.parameters
             pickle.dump(sweep_parameters.get_dict(), file)
+
+        precomputed_input_dir = input_dir / "precomputed"
+        temp_precomputed_input_dir = temp_dir / precomputed_input_dir
+        temp_precomputed_input_dir.mkdir()
+        energies_filepath = (precomputed_input_dir / "energies.npy").as_posix()
+        matsubara_energies_filepath = (
+            precomputed_input_dir / "matsubara_energies.npy"
+        ).as_posix()
+        matsubara_hybridization_filepath = (
+            precomputed_input_dir / "matsubara_hybridization.bin"
+        ).as_posix()
+        hamiltonian_filepath = (
+            precomputed_input_dir / "hamiltonian.npy"
+        ).as_posix()
+        occupancies_filepath = (
+            precomputed_input_dir / "occupancies.npy"
+        ).as_posix()
+        scattering_region_filename = "scatt.npy"
+        scattering_region_filepath = (
+            precomputed_input_dir / scattering_region_filename
+        ).as_posix()
+
+        region: orm.ArrayData = self.inputs.scattering.region
+        np.save(
+            temp_precomputed_input_dir / scattering_region_filename,
+            region.get_array("default"),
+        )
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
             "--device-structure-filename",
-            pickled_device_structure_filename,
-            "--scattering-region-filename",
-            pickled_scattering_region_filename,
+            device_structure_filename,
             "--active-species-filename",
-            pickled_active_species_filename,
-            "--adjust-mu",
-            str(self.inputs.adjust_mu.value),
+            active_species_filename,
             "--parameters-filename",
-            pickled_parameters_filename,
+            parameters_filename,
             "--sweep-parameters-filename",
-            pickled_sweep_paramters_filename,
-            "--energies-filename",
-            self.inputs.hybridization.energies_file.filename,
-            "--matsubara-energies-filename",
-            self.inputs.hybridization.matsubara_energies_file.filename,
-            "--matsubara-hybridization-filename",
-            self.inputs.hybridization.matsubara_hybridization_file.filename,
-            "--hamiltonian-filename",
-            self.inputs.hybridization.hamiltonian_file.filename,
-            "--occupancies-filename",
-            self.inputs.hybridization.occupancies_file.filename,
+            sweep_paramters_filename,
+            "--scattering-region-filepath",
+            scattering_region_filepath,
+            "--energies-filepath",
+            energies_filepath,
+            "--matsubara-energies-filepath",
+            matsubara_energies_filepath,
+            "--matsubara-hybridization-filepath",
+            matsubara_hybridization_filepath,
+            "--hamiltonian-filepath",
+            hamiltonian_filepath,
+            "--occupancies-filepath",
+            occupancies_filepath,
         ]
 
         calcinfo = CalcInfo()
@@ -198,48 +224,47 @@ class DMFTCalculation(CalcJob):
             (
                 self.inputs.hybridization.energies_file.uuid,
                 self.inputs.hybridization.energies_file.filename,
-                self.inputs.hybridization.energies_file.filename,
+                energies_filepath,
             ),
             (
                 self.inputs.hybridization.matsubara_energies_file.uuid,
                 self.inputs.hybridization.matsubara_energies_file.filename,
-                self.inputs.hybridization.matsubara_energies_file.filename,
+                matsubara_energies_filepath,
             ),
             (
                 self.inputs.hybridization.matsubara_hybridization_file.uuid,
                 self.inputs.hybridization.matsubara_hybridization_file.filename,
-                self.inputs.hybridization.matsubara_hybridization_file.filename,
+                matsubara_hybridization_filepath,
             ),
             (
                 self.inputs.hybridization.hamiltonian_file.uuid,
                 self.inputs.hybridization.hamiltonian_file.filename,
-                self.inputs.hybridization.hamiltonian_file.filename,
+                hamiltonian_filepath,
             ),
             (
                 self.inputs.hybridization.occupancies_file.uuid,
                 self.inputs.hybridization.occupancies_file.filename,
-                self.inputs.hybridization.occupancies_file.filename,
+                occupancies_filepath,
             ),
         ]
-        calcinfo.retrieve_list = [
-            "delta_folder",
-            "sigma_folder",
-        ]
+        calcinfo.retrieve_list = ["results"]
 
-        if self.inputs.adjust_mu.value:
-            calcinfo.retrieve_list.append("mu.txt")
+        if self.inputs.adjust_mu:
+            codeinfo.cmdline_params.append("--adjust-mu")
         else:
+            mu_filename: str = self.inputs.mu_file.filename
+            mu_filepath = (precomputed_input_dir / mu_filename).as_posix()
             codeinfo.cmdline_params.extend(
                 (
-                    "--mu-filename",
-                    self.inputs.mu_file.filename,
+                    "--mu-filepath",
+                    mu_filepath,
                 ),
             )
             calcinfo.local_copy_list.append(
                 (
                     self.inputs.mu_file.uuid,
                     self.inputs.mu_file.filename,
-                    self.inputs.mu_file.filename,
+                    mu_filepath,
                 )
             )
 

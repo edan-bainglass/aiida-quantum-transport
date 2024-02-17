@@ -20,8 +20,9 @@ class CurrentParser(Parser):
 
         try:
             with self.retrieved.as_path() as retrieved_path:
+                local_dir = Path(retrieved_path) / "results"
                 for label, filename in self._OUTPUT_FILE_MAPPING.items():
-                    path = Path(retrieved_path) / filename
+                    path = local_dir / filename
                     self.out(f"{label}_file", orm.SinglefileData(path))
         except OSError:
             return self.exit_codes.ERROR_ACCESSING_OUTPUT_FILE

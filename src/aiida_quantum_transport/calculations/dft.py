@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from aiida import orm
@@ -69,18 +70,23 @@ class DFTCalculation(CalcJob):
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
-        pickled_atoms_filename = "atoms.pkl"
-        with folder.open(pickled_atoms_filename, "wb") as file:
+        temp_dir = Path(folder.abspath)
+        input_dir = Path("inputs")
+        temp_input_dir = temp_dir / input_dir
+        temp_input_dir.mkdir()
+
+        atoms_filename = "atoms.pkl"
+        with open(temp_input_dir / atoms_filename, "wb") as file:
             structure: orm.StructureData = self.inputs.structure
             pickle.dump(structure.get_ase(), file)
 
-        pickled_kpoints_filename = "kpoints.pkl"
-        with folder.open(pickled_kpoints_filename, "wb") as file:
+        kpoints_filename = "kpoints.pkl"
+        with open(temp_input_dir / kpoints_filename, "wb") as file:
             kpoints: orm.KpointsData = self.inputs.kpoints
             pickle.dump(kpoints.get_kpoints_mesh()[0], file)
 
-        pickled_parameters_filename = "parameters.pkl"
-        with folder.open(pickled_parameters_filename, "wb") as file:
+        parameters_filename = "parameters.pkl"
+        with open(temp_input_dir / parameters_filename, "wb") as file:
             parameters: orm.Dict = self.inputs.parameters
             pickle.dump(parameters.get_dict(), file)
 
@@ -88,16 +94,16 @@ class DFTCalculation(CalcJob):
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
             "--structure-filename",
-            pickled_atoms_filename,
+            atoms_filename,
             "--kpoints-filename",
-            pickled_kpoints_filename,
+            kpoints_filename,
             "--parameters-filename",
-            pickled_parameters_filename,
+            parameters_filename,
         ]
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
-        calcinfo.retrieve_list = ["log.txt", "restart.gpw", "hs.npy"]
+        calcinfo.retrieve_list = ["results"]
 
         return calcinfo

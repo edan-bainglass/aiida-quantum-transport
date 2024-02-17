@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pickle
-from argparse import ArgumentParser
+from argparse import ArgumentParser, BooleanOptionalAction
 from pathlib import Path
 
 import numpy as np
@@ -13,8 +13,8 @@ from edpyt.nano_dmft import Gfimp as nanoGfimp
 from edpyt.nano_dmft import Gfloc
 from scipy.interpolate import interp1d
 
-DELTA_DIR = "delta_folder"
-SIGMA_DIR = "sigma_folder"
+DELTA_DIRNAME = "delta_folder"
+SIGMA_DIRNAME = "sigma_folder"
 
 
 def run_dmft(
@@ -39,6 +39,15 @@ def run_dmft(
     outer_max_iter=1000,
 ) -> None:
     """docstring"""
+
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
+
+    delta_dir = output_dir / DELTA_DIRNAME
+    delta_dir.mkdir(exist_ok=True)
+
+    sigma_dir = output_dir / SIGMA_DIRNAME
+    sigma_dir.mkdir(exist_ok=True)
 
     device = device[scattering_region]
     mask = np.where(np.isin(device.symbols, active))[0]
@@ -116,12 +125,9 @@ def run_dmft(
             """docstring"""
             for diag, mat in zip(sigma_diag.T, sigma):
                 mat.flat[:: (L + 1)] = diag
-            np.save(f"{SIGMA_DIR}/dmu_{dmu:1.4f}.npy", sigma)
+            np.save(sigma_dir / f"dmu_{dmu:1.4f}.npy", sigma)
 
         save()
-
-    Path(DELTA_DIR).mkdir()
-    Path(SIGMA_DIR).mkdir()
 
     number_of_steps = int((dmu_max - dmu_min) / dmu_step + 1)
 
@@ -147,10 +153,10 @@ def run_dmft(
             print(outcome)
             dmft.max_iter += inner_max_iter
 
-        np.save(f"{DELTA_DIR}/dmu_{dmu:1.4f}.npy", dmft.delta)
+        np.save(delta_dir / f"dmu_{dmu:1.4f}.npy", dmft.delta)
 
         if adjust_mu:
-            with open("mu.txt", "w") as file:
+            with open(output_dir / "mu.txt", "w") as file:
                 file.write(str(gfloc.mu))
 
         save_sigma(_Sigma(energies), dmu)
@@ -168,12 +174,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-srf",
-        "--scattering-region-filename",
-        help="name of pickled scattering region file",
-    )
-
-    parser.add_argument(
         "-af",
         "--active-species-filename",
         help="name of pickled active species file",
@@ -182,7 +182,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-am",
         "--adjust-mu",
-        type=bool,
+        action=BooleanOptionalAction,
         help="if the chemical potential is to be adjusted",
     )
 
@@ -199,78 +199,84 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "-srf",
+        "--scattering-region-filepath",
+        help="path to scattering region file",
+    )
+
+    parser.add_argument(
         "-ef",
-        "--energies-filename",
-        help="name of energies file",
+        "--energies-filepath",
+        help="path to energies file",
     )
 
     parser.add_argument(
         "-mef",
-        "--matsubara-energies-filename",
-        help="name of matsubara energies file",
+        "--matsubara-energies-filepath",
+        help="path to matsubara energies file",
     )
 
     parser.add_argument(
         "-mhf",
-        "--matsubara-hybridization-filename",
-        help="name of matsubara hybridization file",
+        "--matsubara-hybridization-filepath",
+        help="path to matsubara hybridization file",
     )
 
     parser.add_argument(
         "-hf",
-        "--hamiltonian-filename",
-        help="name of hamiltonian file",
+        "--hamiltonian-filepath",
+        help="path to hamiltonian file",
     )
 
     parser.add_argument(
         "-of",
-        "--occupancies-filename",
-        help="name of occupancies file",
+        "--occupancies-filepath",
+        help="path to occupancies file",
     )
 
     parser.add_argument(
         "-mf",
-        "--mu-filename",
+        "--mu-filepath",
         required=False,
-        help="name of converged mu file",
+        help="path to converged mu file",
     )
 
     args = parser.parse_args()
 
-    with open(args.device_structure_filename, "rb") as file:
+    input_dir = Path("inputs")
+
+    with open(input_dir / args.device_structure_filename, "rb") as file:
         device = pickle.load(file)
 
-    with open(args.scattering_region_filename, "rb") as file:
-        region = np.load(file)
-
-    with open(args.active_species_filename, "rb") as file:
+    with open(input_dir / args.active_species_filename, "rb") as file:
         active: dict = pickle.load(file)
 
-    with open(args.parameters_filename, "rb") as file:
+    with open(input_dir / args.parameters_filename, "rb") as file:
         parameters = pickle.load(file)
 
-    with open(args.sweep_parameters_filename, "rb") as file:
+    with open(input_dir / args.sweep_parameters_filename, "rb") as file:
         sweep_parameters = pickle.load(file)
 
-    with open(args.energies_filename, "rb") as file:
-        energies = np.load(file)
+    region = np.load(args.scattering_region_filepath)
 
-    with open(args.matsubara_energies_filename, "rb") as file:
-        matsubara_energies = np.load(file)
+    energies = np.load(args.energies_filepath)
 
-    with open(args.matsubara_hybridization_filename, "rb") as file:
-        matsubara_hybridization = np.fromfile(file, complex)
+    matsubara_energies = np.load(args.matsubara_energies_filepath)
 
-    with open(args.hamiltonian_filename, "rb") as file:
-        hamiltonian = np.load(file)
+    matsubara_hybridization = np.fromfile(
+        args.matsubara_hybridization_filepath, complex
+    )
 
-    with open(args.occupancies_filename, "rb") as file:
-        occupancies = np.load(file)
+    hamiltonian = np.load(args.hamiltonian_filepath)
 
-    if args.mu_filename:
-        mu = np.loadtxt(args.mu_filename)
-    else:
+    occupancies = np.load(args.occupancies_filepath)
+
+    if args.adjust_mu:
         mu = 0.0
+    elif not args.mu_filepath:
+        raise ValueError("missing mu file")
+    else:
+        mu = np.loadtxt(args.mu_filepath)
 
     run_dmft(
         device,
@@ -282,7 +288,7 @@ if __name__ == "__main__":
         hamiltonian,
         occupancies,
         mu=mu,
-        adjust_mu=args.adjust_mu,
+        adjust_mu=args.adjust_mu or False,
         **parameters,
         **sweep_parameters,
     )

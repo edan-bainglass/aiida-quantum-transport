@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from aiida import orm
@@ -75,23 +76,33 @@ class CurrentCalculation(CalcJob):
     def prepare_for_submission(self, folder: Folder) -> CalcInfo:
         """docstring"""
 
-        pickled_parameters_filename = "parameters.pkl"
-        with folder.open(pickled_parameters_filename, "wb") as file:
+        temp_dir = Path(folder.abspath)
+        input_dir = Path("inputs")
+        temp_input_dir = temp_dir / input_dir
+        temp_input_dir.mkdir()
+
+        parameters_filename = "parameters.pkl"
+        with open(temp_input_dir / parameters_filename, "wb") as file:
             parameters: orm.Dict = self.inputs.parameters
             pickle.dump(parameters.get_dict(), file)
+
+        precomputed_input_dir = input_dir / "precomputed"
+        (temp_dir / precomputed_input_dir).mkdir()
+        energies_filepath = (precomputed_input_dir / "energies.npy").as_posix()
+        transmission_folder_path = (
+            precomputed_input_dir / "transmission_folder"
+        ).as_posix()
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
             "--parameters-filename",
-            pickled_parameters_filename,
-            "--energies-filename",
-            self.inputs.hybridization.energies_file.filename,
-            "--transmission-folder-name",
-            "transmission_folder",
+            parameters_filename,
+            "--energies-filepath",
+            energies_filepath,
+            "--transmission-folder-path",
+            transmission_folder_path,
         ]
-
-        self.node.get_remote_workdir()
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
@@ -99,17 +110,14 @@ class CurrentCalculation(CalcJob):
             (
                 self.inputs.hybridization.energies_file.uuid,
                 self.inputs.hybridization.energies_file.filename,
-                self.inputs.hybridization.energies_file.filename,
+                energies_filepath,
             ),
             (
                 self.inputs.transmission.transmission_folder.uuid,
                 ".",
-                "transmission_folder",
+                transmission_folder_path,
             ),
         ]
-        calcinfo.retrieve_list = [
-            "current.npy",
-            "derivative.npy",
-        ]
+        calcinfo.retrieve_list = ["results"]
 
         return calcinfo

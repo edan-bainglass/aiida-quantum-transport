@@ -15,7 +15,7 @@ class DMFTParser(Parser):
 
         try:
             with self.retrieved.as_path() as retrieved_path:
-                root = Path(retrieved_path)
+                root = Path(retrieved_path) / "results"
 
                 path = root / "delta_folder"
                 self.out("delta_folder", orm.FolderData(tree=path))
