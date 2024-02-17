@@ -20,6 +20,13 @@ class DFTParser(Parser):
         """docstring"""
 
         try:
+            self.out(
+                "remote_results_folder",
+                orm.RemoteData(
+                    f"{self.node.get_remote_workdir()}/results",
+                    computer=self.node.computer,
+                ),
+            )
             with self.retrieved.as_path() as retrieved_path:
                 results_dir = Path(retrieved_path / "results")
                 for label, filename in self._OUTPUT_FILE_MAPPING.items():

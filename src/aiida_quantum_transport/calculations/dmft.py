@@ -71,6 +71,18 @@ class DMFTCalculation(CalcJob):
         )
 
         spec.input(
+            "hybridization.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the hybridization calculation",
+        )
+
+        spec.input(
+            "hybridization.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the hybridization calculation",
+        )
+
+        spec.input(
             "mu_file",
             valid_type=orm.SinglefileData,
             required=False,
@@ -78,39 +90,14 @@ class DMFTCalculation(CalcJob):
         )
 
         spec.input(
-            "hybridization.energies_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "hybridization.matsubara_energies_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "hybridization.matsubara_hybridization_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "hybridization.hamiltonian_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "hybridization.occupancies_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
             "metadata.options.parser_name",
             valid_type=str,
             default=cls._default_parser_name,
+        )
+
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
         )
 
         spec.output(
@@ -218,32 +205,37 @@ class DMFTCalculation(CalcJob):
             occupancies_filepath,
         ]
 
+        hybridization_data: orm.RemoteData = (
+            self.inputs.hybridization.remote_results_folder
+        )
+
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
+        calcinfo.local_copy_list = []
+        calcinfo.remote_symlink_list = [
             (
-                self.inputs.hybridization.energies_file.uuid,
-                self.inputs.hybridization.energies_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/energies.npy",
                 energies_filepath,
             ),
             (
-                self.inputs.hybridization.matsubara_energies_file.uuid,
-                self.inputs.hybridization.matsubara_energies_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/matsubara_energies.npy",
                 matsubara_energies_filepath,
             ),
             (
-                self.inputs.hybridization.matsubara_hybridization_file.uuid,
-                self.inputs.hybridization.matsubara_hybridization_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/matsubara_hybridization.bin",
                 matsubara_hybridization_filepath,
             ),
             (
-                self.inputs.hybridization.hamiltonian_file.uuid,
-                self.inputs.hybridization.hamiltonian_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/hamiltonian.npy",
                 hamiltonian_filepath,
             ),
             (
-                self.inputs.hybridization.occupancies_file.uuid,
-                self.inputs.hybridization.occupancies_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/occupancies.npy",
                 occupancies_filepath,
             ),
         ]

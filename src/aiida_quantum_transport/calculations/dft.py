@@ -54,6 +54,11 @@ class DFTCalculation(CalcJob):
             default=cls._default_parser_name,
         )
 
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
+        )
+
         for file in ("log", "restart", "hamiltonian"):
             spec.output(
                 f"{file}_file",

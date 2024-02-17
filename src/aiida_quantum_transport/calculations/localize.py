@@ -32,9 +32,9 @@ class LocalizationCalculation(CalcJob):
         )
 
         spec.input(
-            "restart_file",
-            valid_type=orm.SinglefileData,
-            help="The dft restart file",
+            "device.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the device dft calculation",
         )
 
         spec.input(
@@ -60,6 +60,11 @@ class LocalizationCalculation(CalcJob):
             "metadata.options.parser_name",
             valid_type=str,
             default=cls._default_parser_name,
+        )
+
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
         )
 
         spec.output(
@@ -127,10 +132,16 @@ class LocalizationCalculation(CalcJob):
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
+        calcinfo.local_copy_list = []
+        calcinfo.remote_symlink_list = [
             (
-                self.inputs.restart_file.uuid,
-                self.inputs.restart_file.filename,
+                self.inputs.device.remote_results_folder.computer.uuid,
+                (
+                    Path(
+                        self.inputs.device.remote_results_folder.get_remote_path()
+                    )
+                    / restart_filename
+                ).as_posix(),
                 restart_filepath,
             )
         ]

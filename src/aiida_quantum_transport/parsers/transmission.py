@@ -14,6 +14,13 @@ class TransmissionParser(Parser):
         """docstring"""
 
         try:
+            self.out(
+                "remote_results_folder",
+                orm.RemoteData(
+                    f"{self.node.get_remote_workdir()}/results",
+                    computer=self.node.computer,
+                ),
+            )
             with self.retrieved.as_path() as retrieved_path:
                 path = Path(retrieved_path) / "results" / "transmission_folder"
                 self.out("transmission_folder", orm.FolderData(tree=path))

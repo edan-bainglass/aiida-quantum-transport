@@ -38,21 +38,26 @@ class CurrentCalculation(CalcJob):
         )
 
         spec.input(
-            "hybridization.energies_file",
-            valid_type=orm.SinglefileData,
-            help="file containing computed energies",
+            "hybridization.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the hybridization calculation",
         )
 
         spec.input(
-            "transmission.transmission_folder",
-            valid_type=orm.FolderData,
-            help="folder containing transmission files",
+            "transmission.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the transmission calculation",
         )
 
         spec.input(
             "metadata.options.parser_name",
             valid_type=str,
             default=cls._default_parser_name,
+        )
+
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
         )
 
         spec.output(
@@ -104,17 +109,25 @@ class CurrentCalculation(CalcJob):
             transmission_folder_path,
         ]
 
+        hybridization_data: orm.RemoteData = (
+            self.inputs.hybridization.remote_results_folder
+        )
+        transmission_data: orm.RemoteData = (
+            self.inputs.transmission.remote_results_folder
+        )
+
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
+        calcinfo.local_copy_list = []
+        calcinfo.remote_symlink_list = [
             (
-                self.inputs.hybridization.energies_file.uuid,
-                self.inputs.hybridization.energies_file.filename,
+                hybridization_data.computer.uuid,
+                f"{hybridization_data.get_remote_path()}/energies.npy",
                 energies_filepath,
             ),
             (
-                self.inputs.transmission.transmission_folder.uuid,
-                ".",
+                transmission_data.computer.uuid,
+                f"{transmission_data.get_remote_path()}/transmission_folder",
                 transmission_folder_path,
             ),
         ]

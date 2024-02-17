@@ -195,7 +195,9 @@ class CoulombDiamondsWorkChain(WorkChain):
     def transform_basis(self):
         """docstring"""
         localization_inputs = {
-            "restart_file": self.ctx.dft_device.outputs.restart_file,
+            "device": {
+                "remote_results_folder": self.ctx.dft_device.outputs.remote_results_folder,
+            },
             "scattering": {
                 "region": self.ctx.scattering_region,
                 "active": self.inputs.scattering.active,
@@ -218,14 +220,13 @@ class CoulombDiamondsWorkChain(WorkChain):
             "leads": {
                 "structure": self.inputs.dft.leads.structure,
                 "kpoints": self.inputs.dft.leads.kpoints,
-                "hamiltonian_file": self.ctx.dft_leads.outputs.hamiltonian_file,
+                "remote_results_folder": self.ctx.dft_leads.outputs.remote_results_folder,
             },
             "device": {
                 "structure": self.inputs.dft.device.structure,
             },
-            "localization": {
-                "index_file": self.ctx.localization.outputs.index_file,
-                "hamiltonian_file": self.ctx.localization.outputs.hamiltonian_file,
+            "los": {
+                "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
             },
             **self.exposed_inputs(
                 HybridizationCalculation,
@@ -254,11 +255,7 @@ class CoulombDiamondsWorkChain(WorkChain):
                 "active": self.inputs.scattering.active,
             },
             "hybridization": {
-                "matsubara_hybridization_file": self.ctx.hybridization.outputs.matsubara_hybridization_file,
-                "energies_file": self.ctx.hybridization.outputs.energies_file,
-                "matsubara_energies_file": self.ctx.hybridization.outputs.matsubara_energies_file,
-                "hamiltonian_file": self.ctx.hybridization.outputs.hamiltonian_file,
-                "occupancies_file": self.ctx.hybridization.outputs.occupancies_file,
+                "remote_results_folder": self.ctx.hybridization.outputs.remote_results_folder,
             },
             **self.exposed_inputs(
                 DMFTCalculation,
@@ -287,11 +284,7 @@ class CoulombDiamondsWorkChain(WorkChain):
                 "active": self.inputs.scattering.active,
             },
             "hybridization": {
-                "matsubara_hybridization_file": self.ctx.hybridization.outputs.matsubara_hybridization_file,
-                "energies_file": self.ctx.hybridization.outputs.energies_file,
-                "matsubara_energies_file": self.ctx.hybridization.outputs.matsubara_energies_file,
-                "hamiltonian_file": self.ctx.hybridization.outputs.hamiltonian_file,
-                "occupancies_file": self.ctx.hybridization.outputs.occupancies_file,
+                "remote_results_folder": self.ctx.hybridization.outputs.remote_results_folder,
             },
             "mu_file": self.ctx.dmft_converge_mu.outputs.mu_file,
             "sweep": {
@@ -312,23 +305,22 @@ class CoulombDiamondsWorkChain(WorkChain):
     def compute_transmission(self):
         """docstring"""
         transmission_inputs = {
-            "basis": self.ctx.hybridization.inputs.basis,
-            "parameters": self.ctx.hybridization.inputs.parameters,
             "leads": {
                 "structure": self.inputs.dft.leads.structure,
                 "kpoints": self.inputs.dft.leads.kpoints,
-                "hamiltonian_file": self.ctx.dft_leads.outputs.hamiltonian_file,
+                "remote_results_folder": self.ctx.dft_leads.outputs.remote_results_folder,
             },
             "device": {
                 "structure": self.inputs.dft.device.structure,
             },
-            "localization": {
-                "index_file": self.ctx.localization.outputs.index_file,
-                "hamiltonian_file": self.ctx.localization.outputs.hamiltonian_file,
+            "los": {
+                "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
             },
             "dmft": {
-                "sigma_folder": self.ctx.dmft_sweep_mu.outputs.sigma_folder,
+                "remote_results_folder": self.ctx.dmft_sweep_mu.outputs.remote_results_folder,
             },
+            "basis": self.inputs.hybridization.basis,
+            "parameters": self.inputs.hybridization.parameters,
             **self.exposed_inputs(
                 TransmissionCalculation,
                 namespace="transmission",
@@ -344,12 +336,11 @@ class CoulombDiamondsWorkChain(WorkChain):
     def compute_current(self):
         """docstring"""
         current_inputs = {
-            "parameters": self.ctx.hybridization.inputs.parameters,
             "hybridization": {
-                "energies_file": self.ctx.hybridization.outputs.energies_file,
+                "remote_results_folder": self.ctx.hybridization.outputs.remote_results_folder,
             },
             "transmission": {
-                "transmission_folder": self.ctx.transmission.outputs.transmission_folder,
+                "remote_results_folder": self.ctx.transmission.outputs.remote_results_folder,
             },
             **self.exposed_inputs(
                 CurrentCalculation,

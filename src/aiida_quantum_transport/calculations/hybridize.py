@@ -43,9 +43,9 @@ class HybridizationCalculation(CalcJob):
         )
 
         spec.input(
-            "leads.hamiltonian_file",
-            valid_type=orm.SinglefileData,
-            help="The file holding the leads hamiltonian",
+            "leads.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the leads dft calculation",
         )
 
         spec.input(
@@ -55,15 +55,9 @@ class HybridizationCalculation(CalcJob):
         )
 
         spec.input(
-            "localization.hamiltonian_file",
-            valid_type=orm.SinglefileData,
-            help="The file holding the localized scattering hamiltonian",
-        )
-
-        spec.input(
-            "localization.index_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
+            "los.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the local orbitals calculation",
         )
 
         spec.input(
@@ -83,6 +77,11 @@ class HybridizationCalculation(CalcJob):
             "metadata.options.parser_name",
             valid_type=str,
             default=cls._default_parser_name,
+        )
+
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
         )
 
         spec.output(
@@ -199,22 +198,26 @@ class HybridizationCalculation(CalcJob):
             los_indices_filepath,
         ]
 
+        leads_data: orm.RemoteData = self.inputs.leads.remote_results_folder
+        los_data: orm.RemoteData = self.inputs.los.remote_results_folder
+
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
+        calcinfo.local_copy_list = []
+        calcinfo.remote_symlink_list = [
             (
-                self.inputs.leads.hamiltonian_file.uuid,
-                self.inputs.leads.hamiltonian_file.filename,
+                leads_data.computer.uuid,
+                f"{leads_data.get_remote_path()}/hs.npy",
                 leads_hamiltonian_filepath,
             ),
             (
-                self.inputs.localization.hamiltonian_file.uuid,
-                self.inputs.localization.hamiltonian_file.filename,
+                los_data.computer.uuid,
+                f"{los_data.get_remote_path()}/hs_los.npy",
                 los_hamiltonian_filepath,
             ),
             (
-                self.inputs.localization.index_file.uuid,
-                self.inputs.localization.index_file.filename,
+                los_data.computer.uuid,
+                f"{los_data.get_remote_path()}/idx_los.npy",
                 los_indices_filepath,
             ),
         ]

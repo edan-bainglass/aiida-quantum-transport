@@ -43,15 +43,21 @@ class TransmissionCalculation(CalcJob):
         )
 
         spec.input(
-            "leads.hamiltonian_file",
-            valid_type=orm.SinglefileData,
-            help="The file holding the leads hamiltonian",
+            "leads.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the leads dft calculation",
         )
 
         spec.input(
             "device.structure",
             valid_type=orm.StructureData,
             help="The structure of the device",
+        )
+
+        spec.input(
+            "los.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the local orbitals calculation",
         )
 
         spec.input(
@@ -68,27 +74,20 @@ class TransmissionCalculation(CalcJob):
         )
 
         spec.input(
-            "localization.hamiltonian_file",
-            valid_type=orm.SinglefileData,
-            help="The file holding the localized scattering hamiltonian",
-        )
-
-        spec.input(
-            "localization.index_file",
-            valid_type=orm.SinglefileData,
-            help="",  # TODO fill in
-        )
-
-        spec.input(
-            "dmft.sigma_folder",
-            valid_type=orm.FolderData,
-            help="folder containing self-energy files",
+            "dmft.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the dmft sweep calculation",
         )
 
         spec.input(
             "metadata.options.parser_name",
             valid_type=str,
             default=cls._default_parser_name,
+        )
+
+        spec.output(
+            "remote_results_folder",
+            valid_type=orm.RemoteData,
         )
 
         spec.output(
@@ -172,27 +171,32 @@ class TransmissionCalculation(CalcJob):
             sigma_folder_path,
         ]
 
+        leads_data: orm.RemoteData = self.inputs.leads.remote_results_folder
+        los_data: orm.RemoteData = self.inputs.los.remote_results_folder
+        dmft_data: orm.RemoteData = self.inputs.dmft.remote_results_folder
+
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
-        calcinfo.local_copy_list = [
+        calcinfo.local_copy_list = []
+        calcinfo.remote_symlink_list = [
             (
-                self.inputs.leads.hamiltonian_file.uuid,
-                self.inputs.leads.hamiltonian_file.filename,
+                leads_data.computer.uuid,
+                f"{leads_data.get_remote_path()}/hs.npy",
                 leads_hamiltonian_filepath,
             ),
             (
-                self.inputs.localization.hamiltonian_file.uuid,
-                self.inputs.localization.hamiltonian_file.filename,
+                los_data.computer.uuid,
+                f"{los_data.get_remote_path()}/hs_los.npy",
                 los_hamiltonian_filepath,
             ),
             (
-                self.inputs.localization.index_file.uuid,
-                self.inputs.localization.index_file.filename,
+                los_data.computer.uuid,
+                f"{los_data.get_remote_path()}/idx_los.npy",
                 los_indices_filepath,
             ),
             (
-                self.inputs.dmft.sigma_folder.uuid,
-                ".",
+                dmft_data.computer.uuid,
+                f"{dmft_data.get_remote_path()}/sigma_folder",
                 sigma_folder_path,
             ),
         ]
