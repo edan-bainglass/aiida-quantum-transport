@@ -62,9 +62,8 @@ class TransmissionCalculation(CalcJob):
         spec.input(
             "parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
-            help="parameters used to compute transmission",
+            help="The parameters used to compute transmission",
         )
 
         spec.input(

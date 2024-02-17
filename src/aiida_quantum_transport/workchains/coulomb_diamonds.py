@@ -56,7 +56,6 @@ class CoulombDiamondsWorkChain(WorkChain):
         spec.input(
             "scattering.region",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
             help="The xy-limits defining the scattering region",
         )
@@ -100,7 +99,6 @@ class CoulombDiamondsWorkChain(WorkChain):
         spec.input(
             "dmft.sweep_mu.parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
             help="The chemical potential sweep parameters",
         )

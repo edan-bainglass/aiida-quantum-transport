@@ -17,12 +17,6 @@ class DFTCalculation(CalcJob):
 
     _default_parser_name = "quantum_transport.dft"
 
-    _default_filenames = {
-        "log": "dft.txt",
-        "restart": "dft.gpw",
-        "hamiltonian": "dft.hs.npy",
-    }
-
     @classmethod
     def define(cls, spec: CalcJobProcessSpec) -> None:
         """docstring"""

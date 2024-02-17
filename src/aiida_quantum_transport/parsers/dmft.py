@@ -23,9 +23,7 @@ class DMFTParser(Parser):
                 path = root / "sigma_folder"
                 self.out("sigma_folder", orm.FolderData(tree=path))
 
-                adjust_mu: orm.Bool = self.node.inputs.adjust_mu
-
-                if adjust_mu.value:
+                if self.node.inputs.adjust_mu:
                     path = root / "mu.txt"
                     self.out("mu_file", orm.SinglefileData(path))
         except OSError:

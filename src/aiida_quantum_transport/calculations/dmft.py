@@ -51,7 +51,6 @@ class DMFTCalculation(CalcJob):
         spec.input(
             "adjust_mu",
             valid_type=orm.Bool,
-            required=False,
             default=lambda: orm.Bool(False),
             help="True if the chemical potential is to be adjusted",
         )
@@ -59,7 +58,6 @@ class DMFTCalculation(CalcJob):
         spec.input(
             "parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
             help="DMFT parameters",
         )
@@ -67,7 +65,6 @@ class DMFTCalculation(CalcJob):
         spec.input(
             "sweep.parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
             help="The chemical potential sweep parameters",
         )

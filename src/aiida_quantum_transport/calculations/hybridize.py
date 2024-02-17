@@ -74,7 +74,6 @@ class HybridizationCalculation(CalcJob):
         spec.input(
             "parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
             help="parameters used for orbital hybridization",
         )

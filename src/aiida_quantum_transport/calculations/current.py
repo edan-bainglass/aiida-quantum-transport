@@ -32,9 +32,8 @@ class CurrentCalculation(CalcJob):
         spec.input(
             "parameters",
             valid_type=orm.Dict,
-            required=False,
             default=lambda: orm.Dict({}),
-            help="parameters used to compute current",
+            help="The parameters used to compute current",
         )
 
         spec.input(
