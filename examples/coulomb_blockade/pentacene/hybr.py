@@ -45,7 +45,7 @@ def hybridize_orbitals(
     gfp = ProjectedGreenFunction(gf, los_indices)
     hyb = Hybridization(gfp)
 
-    energies = np.arange(E_min, E_max + E_step / 2.0, E_step).round(7)
+    energies = np.linspace(E_min, E_max, int((E_max - E_min) / E_step) + 1)
 
     no = len(los_indices)
     gd = GridDesc(energies, no, complex)

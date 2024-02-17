@@ -45,7 +45,7 @@ def compute_transmission(
         eta=eta,
     )
 
-    energies = np.arange(E_min, E_max + E_step / 2.0, E_step).round(7)
+    energies = np.linspace(E_min, E_max, int((E_max - E_min) / E_step) + 1)
 
     i1 = los_indices - leads_nao
     s1 = hs_list_ii[1][1]
