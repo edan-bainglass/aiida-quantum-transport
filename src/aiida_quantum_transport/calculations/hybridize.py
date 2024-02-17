@@ -31,46 +31,36 @@ class HybridizationCalculation(CalcJob):
         )
 
         spec.input(
-            "leads.structure",
-            valid_type=orm.StructureData,
-            help="The structure of the leads",
-        )
-
-        spec.input(
-            "leads.kpoints",
-            valid_type=orm.KpointsData,
-            help="The kpoints mesh used for the leads",
-        )
-
-        spec.input(
-            "leads.remote_results_folder",
-            valid_type=orm.RemoteData,
-            help="The results folder of the leads dft calculation",
-        )
-
-        spec.input(
-            "device.structure",
-            valid_type=orm.StructureData,
-            help="The structure of the device",
-        )
-
-        spec.input(
             "los.remote_results_folder",
             valid_type=orm.RemoteData,
             help="The results folder of the local orbitals calculation",
         )
 
         spec.input(
-            "basis",
+            "greens_function.remote_results_folder",
+            valid_type=orm.RemoteData,
+            help="The results folder of the greens function parameters calculation",
+        )
+
+        spec.input(
+            "greens_function_parameters",
             valid_type=orm.Dict,
-            help="",  # TODO fill in
+            default=lambda: orm.Dict({}),
+            help="The parameters used to define the greens function",
+        )
+
+        spec.input(
+            "energy_grid_parameters",
+            valid_type=orm.Dict,
+            default=lambda: orm.Dict({}),
+            help="The parameters used to define the energy grid",
         )
 
         spec.input(
             "parameters",
             valid_type=orm.Dict,
             default=lambda: orm.Dict({}),
-            help="parameters used for orbital hybridization",
+            help="The parameters used for orbital hybridization",
         )
 
         spec.input(
@@ -140,85 +130,73 @@ class HybridizationCalculation(CalcJob):
         temp_input_dir = temp_dir / input_dir
         temp_input_dir.mkdir()
 
-        leads_structure_filename = "leads_structure.pkl"
-        with open(temp_input_dir / leads_structure_filename, "wb") as file:
-            leads: orm.StructureData = self.inputs.leads.structure
-            pickle.dump(leads.get_ase(), file)
-
-        device_structure_filename = "device_structure.pkl"
-        with open(temp_input_dir / device_structure_filename, "wb") as file:
-            device: orm.StructureData = self.inputs.device.structure
-            pickle.dump(device.get_ase(), file)
-
-        leads_kpoints_filename = "leads_kpoints.pkl"
-        with open(temp_input_dir / leads_kpoints_filename, "wb") as file:
-            kpoints: orm.KpointsData = self.inputs.leads.kpoints
-            pickle.dump(kpoints.get_kpoints_mesh()[0], file)
-
-        basis_filename = "basis.pkl"
-        with open(temp_input_dir / basis_filename, "wb") as file:
-            basis: orm.Dict = self.inputs.basis
-            pickle.dump(basis.get_dict(), file)
-
         parameters_filename = "parameters.pkl"
         with open(temp_input_dir / parameters_filename, "wb") as file:
-            parameters: orm.Dict = self.inputs.parameters
-            pickle.dump(parameters.get_dict(), file)
+            parameters = {
+                **self.inputs.greens_function_parameters,
+                **self.inputs.energy_grid_parameters,
+                **self.inputs.parameters,
+            }
+            pickle.dump(parameters, file)
 
         precomputed_input_dir = input_dir / "precomputed"
         (temp_dir / precomputed_input_dir).mkdir()
-        leads_hamiltonian_filepath = (
-            precomputed_input_dir / "hs_leads.npy"
-        ).as_posix()
-        los_hamiltonian_filepath = (
-            precomputed_input_dir / "hs_los.npy"
-        ).as_posix()
         los_indices_filepath = (
             precomputed_input_dir / "los_indices.npy"
+        ).as_posix()
+        hamiltonian_ii_filepath = (
+            precomputed_input_dir / "hamiltonian_ii.pkl"
+        ).as_posix()
+        hamiltonian_ij_filepath = (
+            precomputed_input_dir / "hamiltonian_ij.pkl"
+        ).as_posix()
+        self_energies_filepath = (
+            precomputed_input_dir / "self_energies.pkl"
         ).as_posix()
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
         codeinfo.cmdline_params = [
-            "--leads-structure-filename",
-            leads_structure_filename,
-            "--device-structure-filename",
-            device_structure_filename,
-            "--leads-kpoints-filename",
-            leads_kpoints_filename,
-            "--basis-filename",
-            basis_filename,
             "--parameters-filename",
             parameters_filename,
-            "--leads-hamiltonian-filepath",
-            leads_hamiltonian_filepath,
-            "--los-hamiltonian-filepath",
-            los_hamiltonian_filepath,
-            "--los-index-filepath",
+            "--los-indices-filepath",
             los_indices_filepath,
+            "--hamiltonian-ii-filepath",
+            hamiltonian_ii_filepath,
+            "--hamiltonian-ij-filepath",
+            hamiltonian_ij_filepath,
+            "--self-energies-filepath",
+            self_energies_filepath,
         ]
 
-        leads_data: orm.RemoteData = self.inputs.leads.remote_results_folder
         los_data: orm.RemoteData = self.inputs.los.remote_results_folder
+        greens_function_data: orm.RemoteData = (
+            self.inputs.greens_function.remote_results_folder
+        )
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
         calcinfo.remote_symlink_list = [
             (
-                leads_data.computer.uuid,
-                f"{leads_data.get_remote_path()}/hs.npy",
-                leads_hamiltonian_filepath,
-            ),
-            (
-                los_data.computer.uuid,
-                f"{los_data.get_remote_path()}/hs_los.npy",
-                los_hamiltonian_filepath,
-            ),
-            (
                 los_data.computer.uuid,
                 f"{los_data.get_remote_path()}/idx_los.npy",
                 los_indices_filepath,
+            ),
+            (
+                greens_function_data.computer.uuid,
+                f"{greens_function_data.get_remote_path()}/hamiltonian_ii.pkl",
+                hamiltonian_ii_filepath,
+            ),
+            (
+                greens_function_data.computer.uuid,
+                f"{greens_function_data.get_remote_path()}/hamiltonian_ij.pkl",
+                hamiltonian_ij_filepath,
+            ),
+            (
+                greens_function_data.computer.uuid,
+                f"{greens_function_data.get_remote_path()}/self_energies.pkl",
+                self_energies_filepath,
             ),
         ]
         calcinfo.retrieve_list = ["results"]

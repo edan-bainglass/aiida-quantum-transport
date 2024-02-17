@@ -9,6 +9,7 @@ from aiida_quantum_transport.calculations import (
     CurrentCalculation,
     DFTCalculation,
     DMFTCalculation,
+    GreensFuncionParametersCalculation,
     HybridizationCalculation,
     LocalizationCalculation,
     TransmissionCalculation,
@@ -73,9 +74,29 @@ class CoulombDiamondsWorkChain(WorkChain):
         )
 
         spec.expose_inputs(
+            GreensFuncionParametersCalculation,
+            namespace="greens_function",
+            include=["code", "basis", "metadata"],
+        )
+
+        spec.input(
+            "greens_function_parameters",
+            valid_type=orm.Dict,
+            default=lambda: orm.Dict({}),
+            help="The parameters used to define the greens function",
+        )
+
+        spec.input(
+            "energy_grid_parameters",
+            valid_type=orm.Dict,
+            default=lambda: orm.Dict({}),
+            help="The parameters used to define the energy grid",
+        )
+
+        spec.expose_inputs(
             HybridizationCalculation,
             namespace="hybridization",
-            include=["code", "basis", "parameters", "metadata"],
+            include=["code", "parameters", "metadata"],
         )
 
         spec.expose_inputs(
@@ -131,6 +152,11 @@ class CoulombDiamondsWorkChain(WorkChain):
         )
 
         spec.expose_outputs(
+            GreensFuncionParametersCalculation,
+            namespace="greens_function",
+        )
+
+        spec.expose_outputs(
             HybridizationCalculation,
             namespace="hybridization",
         )
@@ -159,6 +185,7 @@ class CoulombDiamondsWorkChain(WorkChain):
             cls.run_dft,
             cls.define_scattering_region,
             cls.transform_basis,
+            cls.generate_greens_function_parameters,
             cls.compute_hybridization,
             cls.run_dmft_converge_mu,
             cls.run_dmft_sweep_mu,
@@ -169,17 +196,14 @@ class CoulombDiamondsWorkChain(WorkChain):
 
     def run_dft(self):
         """docstring"""
-
         leads_inputs = {
             "code": self.inputs.dft.code,
             **self.exposed_inputs(DFTCalculation, namespace="dft.leads"),
         }
-
         device_inputs = {
             "code": self.inputs.dft.code,
             **self.exposed_inputs(DFTCalculation, namespace="dft.device"),
         }
-
         return ToContext(
             dft_leads=self.submit(DFTCalculation, **leads_inputs),
             dft_device=self.submit(DFTCalculation, **device_inputs),
@@ -214,9 +238,9 @@ class CoulombDiamondsWorkChain(WorkChain):
             )
         )
 
-    def compute_hybridization(self):
+    def generate_greens_function_parameters(self):
         """docstring"""
-        hybridization_inputs = {
+        greens_function_inputs = {
             "leads": {
                 "structure": self.inputs.dft.leads.structure,
                 "kpoints": self.inputs.dft.leads.kpoints,
@@ -228,6 +252,30 @@ class CoulombDiamondsWorkChain(WorkChain):
             "los": {
                 "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
             },
+            **self.exposed_inputs(
+                GreensFuncionParametersCalculation,
+                namespace="greens_function",
+            ),
+        }
+        return ToContext(
+            greens_function=self.submit(
+                GreensFuncionParametersCalculation,
+                **greens_function_inputs,
+            )
+        )
+
+    def compute_hybridization(self):
+        """docstring"""
+        hybridization_inputs = {
+            "los": {
+                "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
+            },
+            "greens_function": {
+                "remote_results_folder": self.ctx.greens_function.outputs.remote_results_folder,
+            },
+            "greens_function_parameters": self.inputs.greens_function_parameters,
+            "energy_grid_parameters": self.inputs.energy_grid_parameters,
+            "parameters": self.inputs.hybridization.parameters,
             **self.exposed_inputs(
                 HybridizationCalculation,
                 namespace="hybridization",
@@ -305,22 +353,17 @@ class CoulombDiamondsWorkChain(WorkChain):
     def compute_transmission(self):
         """docstring"""
         transmission_inputs = {
-            "leads": {
-                "structure": self.inputs.dft.leads.structure,
-                "kpoints": self.inputs.dft.leads.kpoints,
-                "remote_results_folder": self.ctx.dft_leads.outputs.remote_results_folder,
-            },
-            "device": {
-                "structure": self.inputs.dft.device.structure,
-            },
             "los": {
                 "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
+            },
+            "greens_function": {
+                "remote_results_folder": self.ctx.greens_function.outputs.remote_results_folder,
             },
             "dmft": {
                 "remote_results_folder": self.ctx.dmft_sweep_mu.outputs.remote_results_folder,
             },
-            "basis": self.inputs.hybridization.basis,
-            "parameters": self.inputs.hybridization.parameters,
+            "greens_function_parameters": self.inputs.greens_function_parameters,
+            "energy_grid_parameters": self.inputs.energy_grid_parameters,
             **self.exposed_inputs(
                 TransmissionCalculation,
                 namespace="transmission",
@@ -378,6 +421,14 @@ class CoulombDiamondsWorkChain(WorkChain):
                 self.ctx.localization,
                 LocalizationCalculation,
                 namespace="localization",
+            )
+        )
+
+        self.out_many(
+            self.exposed_outputs(
+                self.ctx.greens_function,
+                GreensFuncionParametersCalculation,
+                namespace="greens_function",
             )
         )
 
