@@ -68,11 +68,11 @@ def compute_transmission(
         if comm.rank == 0:
             np.save(filepath, T.real)
 
-    run(output_dir / "dft.npy")
-    for filename in Path(sigma_folder_path).glob("dmu_*"):
-        dmft_self_energy = DataSelfEnergy(energies, np.load(filename))
+    run(output_dir / "transmission_dft.npy")
+    for filepath in Path(sigma_folder_path).glob("dmu_*"):
+        dmft_self_energy = DataSelfEnergy(energies, np.load(filepath))
         gf.selfenergies.append((1, dmft_self_energy))
-        run(transmission_dir / filename)
+        run(transmission_dir / filepath.name)
         gf.selfenergies.pop()
 
 
