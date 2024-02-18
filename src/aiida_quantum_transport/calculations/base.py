@@ -26,6 +26,7 @@ class BaseCalculation(CalcJob):
             "metadata.options.resources": lambda: {
                 "num_machines": 1,
                 "num_mpiprocs_per_machine": 1,
+                "num_cores_per_mpiprocs": 1,
             },
         }
 
