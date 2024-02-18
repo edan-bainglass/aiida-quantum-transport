@@ -11,7 +11,6 @@ from ase.atoms import Atoms
 from qtpyt.base.leads import LeadSelfEnergy
 from qtpyt.basis import Basis
 from qtpyt.block_tridiag import graph_partition
-from qtpyt.parallel import comm
 from qtpyt.surface.tools import prepare_leads_matrices
 from qtpyt.tools import remove_pbc
 
@@ -27,6 +26,9 @@ def compute_gf_parameters(
     basis: dict,
 ) -> None:
     """docstring"""
+
+    output_dir = Path("results")
+    output_dir.mkdir(exist_ok=True)
 
     basis_leads = Basis.from_dictionary(leads, basis)
     basis_device = Basis.from_dictionary(device, basis)
@@ -67,20 +69,16 @@ def compute_gf_parameters(
 
     self_energies = [(0, se[0]), (len(hs_list_ii) - 1, se[1])]
 
-    if comm.rank == 0:
-        output_dir = Path("results")
-        output_dir.mkdir(exist_ok=True)
+    np.save(output_dir / "leads_nao.npy", basis_leads.nao)
 
-        np.save(output_dir / "leads_nao.npy", basis_leads.nao)
+    with open(output_dir / "hamiltonian_ii.pkl", "wb") as file:
+        pickle.dump(hs_list_ii, file)
 
-        with open(output_dir / "hamiltonian_ii.pkl", "wb") as file:
-            pickle.dump(hs_list_ii, file)
+    with open(output_dir / "hamiltonian_ij.pkl", "wb") as file:
+        pickle.dump(hs_list_ij, file)
 
-        with open(output_dir / "hamiltonian_ij.pkl", "wb") as file:
-            pickle.dump(hs_list_ij, file)
-
-        with open(output_dir / "self_energies.pkl", "wb") as file:
-            pickle.dump(self_energies, file)
+    with open(output_dir / "self_energies.pkl", "wb") as file:
+        pickle.dump(self_energies, file)
 
 
 if __name__ == "__main__":
