@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
-from aiida.engine import CalcJob
+
+from .base import BaseCalculation
 
 if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class HybridizationCalculation(CalcJob):
+class HybridizationCalculation(BaseCalculation):
     """docstring"""
 
     _default_parser_name = "quantum_transport.hybridize"
@@ -61,12 +62,6 @@ class HybridizationCalculation(CalcJob):
             valid_type=orm.Dict,
             default=lambda: orm.Dict({}),
             help="The parameters used for orbital hybridization",
-        )
-
-        spec.input(
-            "metadata.options.parser_name",
-            valid_type=str,
-            default=cls._default_parser_name,
         )
 
         spec.output(

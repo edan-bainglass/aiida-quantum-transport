@@ -8,13 +8,14 @@ import numpy as np
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
-from aiida.engine import CalcJob
+
+from .base import BaseCalculation
 
 if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class LocalizationCalculation(CalcJob):
+class LocalizationCalculation(BaseCalculation):
     """docstring"""
 
     _default_parser_name = "quantum_transport.localize"
@@ -54,12 +55,6 @@ class LocalizationCalculation(CalcJob):
             valid_type=orm.Bool,
             default=lambda: orm.Bool(False),
             help="",  # TODO fill in
-        )
-
-        spec.input(
-            "metadata.options.parser_name",
-            valid_type=str,
-            default=cls._default_parser_name,
         )
 
         spec.output(

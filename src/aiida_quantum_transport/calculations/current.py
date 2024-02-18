@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
-from aiida.engine import CalcJob
+
+from .base import BaseCalculation
 
 if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class CurrentCalculation(CalcJob):
+class CurrentCalculation(BaseCalculation):
     """docstring"""
 
     _default_parser_name = "quantum_transport.current"
@@ -47,12 +48,6 @@ class CurrentCalculation(CalcJob):
             "transmission.remote_results_folder",
             valid_type=orm.RemoteData,
             help="The results folder of the transmission calculation",
-        )
-
-        spec.input(
-            "metadata.options.parser_name",
-            valid_type=str,
-            default=cls._default_parser_name,
         )
 
         spec.output(

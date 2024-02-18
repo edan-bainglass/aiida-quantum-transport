@@ -7,13 +7,14 @@ from typing import TYPE_CHECKING
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
-from aiida.engine import CalcJob
+
+from .base import BaseCalculation
 
 if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class DFTCalculation(CalcJob):
+class DFTCalculation(BaseCalculation):
     """docstring"""
 
     _default_parser_name = "quantum_transport.dft"
@@ -46,12 +47,6 @@ class DFTCalculation(CalcJob):
             "parameters",
             valid_type=orm.Dict,
             help="The input parameters",
-        )
-
-        spec.input(
-            "metadata.options.parser_name",
-            valid_type=str,
-            default=cls._default_parser_name,
         )
 
         spec.output(
