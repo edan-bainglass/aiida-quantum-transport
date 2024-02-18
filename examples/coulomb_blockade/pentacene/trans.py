@@ -139,7 +139,7 @@ if __name__ == "__main__":
     with open(args.self_energies_filepath, "rb") as file:
         self_energies = pickle.load(file)
 
-    los_indices = np.load(args.los_index_filepath)
+    los_indices = np.load(args.los_indices_filepath)
 
     leads_nao = np.load(args.leads_nao_filepath)
 
