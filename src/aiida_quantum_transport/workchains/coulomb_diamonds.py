@@ -96,7 +96,12 @@ class CoulombDiamondsWorkChain(WorkChain):
         spec.expose_inputs(
             HybridizationCalculation,
             namespace="hybridization",
-            include=["code", "parameters", "metadata"],
+            include=[
+                "code",
+                "temperature",
+                "matsubara_grid_scalar",
+                "metadata",
+            ],
         )
 
         spec.expose_inputs(
@@ -275,7 +280,6 @@ class CoulombDiamondsWorkChain(WorkChain):
             },
             "greens_function_parameters": self.inputs.greens_function_parameters,
             "energy_grid_parameters": self.inputs.energy_grid_parameters,
-            "parameters": self.inputs.hybridization.parameters,
             **self.exposed_inputs(
                 HybridizationCalculation,
                 namespace="hybridization",
@@ -385,6 +389,7 @@ class CoulombDiamondsWorkChain(WorkChain):
             "transmission": {
                 "remote_results_folder": self.ctx.transmission.outputs.remote_results_folder,
             },
+            "temperature": self.inputs.hybridization.temperature,
             **self.exposed_inputs(
                 CurrentCalculation,
                 namespace="current",

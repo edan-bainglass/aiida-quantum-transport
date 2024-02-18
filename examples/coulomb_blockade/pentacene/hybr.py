@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 import numpy as np
+from ase.units import kB
 from qtpyt.block_tridiag import greenfunction
 from qtpyt.continued_fraction import get_ao_charge
 from qtpyt.hybridization import Hybridization
@@ -21,13 +22,13 @@ def hybridize_orbitals(
     hs_list_ii,
     hs_list_ij,
     self_energies,
+    temperature=300.0,
     solver="dyson",
     eta=1e-4,
     E_min=-3.0,
     E_max=3.0,
     E_step=1e-2,
-    E_grid_size=3000,
-    beta=70.0,
+    matsubara_grid_scalar=1.0,
 ) -> None:
     """docstring"""
 
@@ -70,8 +71,10 @@ def hybridize_orbitals(
 
     # Matsubara
     gf.eta = 0.0
-    energies = 1.0j * (2 * np.arange(E_grid_size) + 1) * np.pi / beta
-    gd = GridDesc(energies, no, complex)
+    beta = 1 / (kB * temperature)
+    E_grid_size = len(energies) * matsubara_grid_scalar
+    matsubara_energies = 1.0j * (2 * np.arange(E_grid_size) + 1) * np.pi / beta
+    gd = GridDesc(matsubara_energies, no, complex)
     HB = gd.empty_aligned_orbs()
 
     for e, energy in enumerate(gd.energies):
@@ -81,7 +84,7 @@ def hybridize_orbitals(
 
     if comm.rank == 0:
         np.save(output_dir / "occupancies.npy", get_ao_charge(gfp))
-        np.save(output_dir / "matsubara_energies.npy", energies)
+        np.save(output_dir / "matsubara_energies.npy", matsubara_energies)
 
 
 if __name__ == "__main__":

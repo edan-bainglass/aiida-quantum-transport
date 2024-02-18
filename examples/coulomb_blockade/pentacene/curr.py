@@ -66,7 +66,7 @@ def compute_current(
     V_min=-2.5,
     V_max=2.5,
     dV=0.1,
-    temperature=9,
+    temperature=300.0,
     transmission_folder_path="transmission_folder",
 ) -> None:
     """docstring"""

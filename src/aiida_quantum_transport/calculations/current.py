@@ -32,6 +32,13 @@ class CurrentCalculation(BaseCalculation):
         )
 
         spec.input(
+            "temperature",
+            valid_type=orm.Float,
+            default=lambda: orm.Float(300.0),
+            help="The temperature in Kelvin",
+        )
+
+        spec.input(
             "parameters",
             valid_type=orm.Dict,
             default=lambda: orm.Dict({}),
@@ -83,8 +90,11 @@ class CurrentCalculation(BaseCalculation):
 
         parameters_filename = "parameters.pkl"
         with open(temp_input_dir / parameters_filename, "wb") as file:
-            parameters: orm.Dict = self.inputs.parameters
-            pickle.dump(parameters.get_dict(), file)
+            parameters = {
+                **self.inputs.parameters.get_dict(),
+                "temperature": self.inputs.temperature.value,
+            }
+            pickle.dump(parameters, file)
 
         precomputed_input_dir = input_dir / "precomputed"
         (temp_dir / precomputed_input_dir).mkdir()

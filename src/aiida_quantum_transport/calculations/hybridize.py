@@ -44,6 +44,20 @@ class HybridizationCalculation(BaseCalculation):
         )
 
         spec.input(
+            "temperature",
+            valid_type=orm.Float,
+            default=lambda: orm.Float(300.0),
+            help="The temperature in Kelvin",
+        )
+
+        spec.input(
+            "matsubara_grid_scalar",
+            valid_type=orm.Float,
+            default=lambda: orm.Float(1.0),
+            help="The scalar used to modify the matsubara energy grid",
+        )
+
+        spec.input(
             "greens_function_parameters",
             valid_type=orm.Dict,
             default=lambda: orm.Dict({}),
@@ -131,6 +145,8 @@ class HybridizationCalculation(BaseCalculation):
                 **self.inputs.greens_function_parameters,
                 **self.inputs.energy_grid_parameters,
                 **self.inputs.parameters,
+                "temperature": self.inputs.temperature.value,
+                "matsubara_grid_scalar": self.inputs.matsubara_grid_scalar.value,
             }
             pickle.dump(parameters, file)
 
