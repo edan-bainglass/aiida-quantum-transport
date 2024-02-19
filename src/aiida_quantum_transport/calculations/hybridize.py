@@ -51,10 +51,10 @@ class HybridizationCalculation(BaseCalculation):
         )
 
         spec.input(
-            "matsubara_grid_scalar",
-            valid_type=orm.Float,
-            default=lambda: orm.Float(1.0),
-            help="The scalar used to modify the matsubara energy grid",
+            "matsubara_grid_size",
+            valid_type=orm.Int,
+            default=lambda: orm.Int(3000),
+            help="The size of the Matsubara energy grid",
         )
 
         spec.input(
@@ -146,7 +146,7 @@ class HybridizationCalculation(BaseCalculation):
                 **self.inputs.energy_grid_parameters,
                 **self.inputs.parameters,
                 "temperature": self.inputs.temperature.value,
-                "matsubara_grid_scalar": self.inputs.matsubara_grid_scalar.value,
+                "matsubara_grid_size": self.inputs.matsubara_grid_size.value,
             }
             pickle.dump(parameters, file)
 

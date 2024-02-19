@@ -96,12 +96,7 @@ class CoulombDiamondsWorkChain(WorkChain):
         spec.expose_inputs(
             HybridizationCalculation,
             namespace="hybridization",
-            include=[
-                "code",
-                "temperature",
-                "matsubara_grid_scalar",
-                "metadata",
-            ],
+            include=["code", "temperature", "matsubara_grid_size", "metadata"],
         )
 
         spec.expose_inputs(
