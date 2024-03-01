@@ -9,7 +9,7 @@ from aiida_quantum_transport.calculations import (
     CurrentCalculation,
     DFTCalculation,
     DMFTCalculation,
-    GreensFuncionParametersCalculation,
+    GreensFunctionParametersCalculation,
     HybridizationCalculation,
     LocalizationCalculation,
     TransmissionCalculation,
@@ -74,7 +74,7 @@ class CoulombDiamondsWorkChain(WorkChain):
         )
 
         spec.expose_inputs(
-            GreensFuncionParametersCalculation,
+            GreensFunctionParametersCalculation,
             namespace="greens_function",
             include=["code", "basis", "metadata"],
         )
@@ -152,7 +152,7 @@ class CoulombDiamondsWorkChain(WorkChain):
         )
 
         spec.expose_outputs(
-            GreensFuncionParametersCalculation,
+            GreensFunctionParametersCalculation,
             namespace="greens_function",
         )
 
@@ -253,13 +253,13 @@ class CoulombDiamondsWorkChain(WorkChain):
                 "remote_results_folder": self.ctx.localization.outputs.remote_results_folder,
             },
             **self.exposed_inputs(
-                GreensFuncionParametersCalculation,
+                GreensFunctionParametersCalculation,
                 namespace="greens_function",
             ),
         }
         return ToContext(
             greens_function=self.submit(
-                GreensFuncionParametersCalculation,
+                GreensFunctionParametersCalculation,
                 **greens_function_inputs,
             )
         )
@@ -427,7 +427,7 @@ class CoulombDiamondsWorkChain(WorkChain):
         self.out_many(
             self.exposed_outputs(
                 self.ctx.greens_function,
-                GreensFuncionParametersCalculation,
+                GreensFunctionParametersCalculation,
                 namespace="greens_function",
             )
         )

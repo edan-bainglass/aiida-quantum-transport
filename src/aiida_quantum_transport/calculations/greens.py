@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
-class GreensFuncionParametersCalculation(BaseCalculation):
+class GreensFunctionParametersCalculation(BaseCalculation):
     """docstring"""
 
     _default_parser_name = "quantum_transport.greens"
