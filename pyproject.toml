@@ -27,6 +27,9 @@ name = "aiida-quantum-transport"
 readme = "README.md"
 requires-python = ">=3.9"
 
+[project.entry-points."aiida.workflows"]
+"quantum_transport.coulomb_diamonds" = "aiida_quantum_transport.workchains.coulomb_diamonds:CoulombDiamondsWorkChain"
+
 [project.entry-points."aiida.calculations"]
 "quantum_transport" = "aiida_quantum_transport.calculations.custom:CustomCalculation"
 "quantum_transport.dft" = "aiida_quantum_transport.calculations.dft:DFTCalculation"
