@@ -1,4 +1,4 @@
-""" Helper functions for automatically setting up computer & code.
+"""Helper functions for automatically setting up computer & code.
 
 Helper functions for setting up
 
@@ -6,6 +6,7 @@ Helper functions for setting up
  2. A code on localhost
 
 """
+
 from __future__ import annotations
 
 import shutil

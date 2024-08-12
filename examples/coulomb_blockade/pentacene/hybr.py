@@ -72,9 +72,7 @@ def hybridize_orbitals(
     # Matsubara
     gf.eta = 0.0
     beta = 1 / (kB * temperature)
-    matsubara_energies = (
-        1.0j * (2 * np.arange(matsubara_grid_size) + 1) * np.pi / beta
-    )
+    matsubara_energies = 1.0j * (2 * np.arange(matsubara_grid_size) + 1) * np.pi / beta
     gd = GridDesc(matsubara_energies, no, complex)
     HB = gd.empty_aligned_orbs()
 

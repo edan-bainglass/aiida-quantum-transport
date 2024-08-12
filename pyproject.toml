@@ -101,7 +101,7 @@ ignore = [
   "RUF005", # Consider iterable unpacking instead of concatenation
   "RUF012"
 ]
-line-length = 80
+line-length = 88
 select = [
   "E", # pydocstyle
   "W", # pydocstyle
