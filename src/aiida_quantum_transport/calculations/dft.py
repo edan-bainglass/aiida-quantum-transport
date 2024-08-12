@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
 
 from .base import BaseCalculation
-
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
 class DFTCalculation(BaseCalculation):
@@ -20,7 +16,7 @@ class DFTCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.dft"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)

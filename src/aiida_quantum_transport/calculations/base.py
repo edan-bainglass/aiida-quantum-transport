@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from aiida.engine import CalcJob
-
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
 class BaseCalculation(CalcJob):
@@ -14,7 +9,7 @@ class BaseCalculation(CalcJob):
     _default_parser_name = ""
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)

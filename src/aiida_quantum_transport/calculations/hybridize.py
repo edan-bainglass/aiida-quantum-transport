@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
 
 from .base import BaseCalculation
-
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
 class HybridizationCalculation(BaseCalculation):
@@ -20,7 +16,7 @@ class HybridizationCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.hybridize"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)
@@ -152,9 +148,7 @@ class HybridizationCalculation(BaseCalculation):
 
         precomputed_input_dir = input_dir / "precomputed"
         (temp_dir / precomputed_input_dir).mkdir()
-        los_indices_filepath = (
-            precomputed_input_dir / "los_indices.npy"
-        ).as_posix()
+        los_indices_filepath = (precomputed_input_dir / "los_indices.npy").as_posix()
         hamiltonian_ii_filepath = (
             precomputed_input_dir / "hamiltonian_ii.pkl"
         ).as_posix()
@@ -180,10 +174,22 @@ class HybridizationCalculation(BaseCalculation):
             self_energies_filepath,
         ]
 
-        los_data: orm.RemoteData = self.inputs.los.remote_results_folder
-        greens_function_data: orm.RemoteData = (
-            self.inputs.greens_function.remote_results_folder
-        )
+        los_data = self.inputs.los.remote_results_folder
+        greens_function_data = self.inputs.greens_function.remote_results_folder
+
+        if not isinstance(los_data, orm.RemoteData):
+            raise ValueError(f"Expected `RemoteData` instance; got `{type(los_data)}`")
+
+        if los_data.computer is None:
+            raise ValueError("Missing `Computer` node for los step")
+
+        if not isinstance(greens_function_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(greens_function_data)}`"
+            )
+
+        if greens_function_data.computer is None:
+            raise ValueError("Missing `Computer` node for greens function step")
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]

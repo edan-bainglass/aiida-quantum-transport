@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import numpy as np
 from aiida import orm
@@ -11,9 +10,6 @@ from aiida.common.folders import Folder
 
 from .base import BaseCalculation
 
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
-
 
 class LocalizationCalculation(BaseCalculation):
     """docstring"""
@@ -21,7 +17,7 @@ class LocalizationCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.localize"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)
@@ -125,18 +121,23 @@ class LocalizationCalculation(BaseCalculation):
         if self.inputs.lowdin:
             codeinfo.cmdline_params.append("--lowdin")
 
+        device_data = self.inputs.device.remote_results_folder
+
+        if not isinstance(device_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(device_data)}`"
+            )
+
+        if device_data.computer is None:
+            raise ValueError("Missing `Computer` node for leads step")
+
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
         calcinfo.local_copy_list = []
         calcinfo.remote_symlink_list = [
             (
-                self.inputs.device.remote_results_folder.computer.uuid,
-                (
-                    Path(
-                        self.inputs.device.remote_results_folder.get_remote_path()
-                    )
-                    / restart_filename
-                ).as_posix(),
+                device_data.computer.uuid,
+                f"{device_data.get_remote_path()}/{restart_filename}",
                 restart_filepath,
             )
         ]

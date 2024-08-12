@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
 
 from .base import BaseCalculation
-
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
 class GreensFunctionParametersCalculation(BaseCalculation):
@@ -20,7 +16,7 @@ class GreensFunctionParametersCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.greens"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)
@@ -132,12 +128,8 @@ class GreensFunctionParametersCalculation(BaseCalculation):
 
         precomputed_input_dir = input_dir / "precomputed"
         (temp_dir / precomputed_input_dir).mkdir()
-        leads_hamiltonian_filepath = (
-            precomputed_input_dir / "hs_leads.npy"
-        ).as_posix()
-        los_hamiltonian_filepath = (
-            precomputed_input_dir / "hs_los.npy"
-        ).as_posix()
+        leads_hamiltonian_filepath = (precomputed_input_dir / "hs_leads.npy").as_posix()
+        los_hamiltonian_filepath = (precomputed_input_dir / "hs_los.npy").as_posix()
 
         codeinfo = CodeInfo()
         codeinfo.code_uuid = self.inputs.code.uuid
@@ -156,8 +148,22 @@ class GreensFunctionParametersCalculation(BaseCalculation):
             los_hamiltonian_filepath,
         ]
 
-        leads_data: orm.RemoteData = self.inputs.leads.remote_results_folder
-        los_data: orm.RemoteData = self.inputs.los.remote_results_folder
+        leads_data = self.inputs.leads.remote_results_folder
+        los_data = self.inputs.los.remote_results_folder
+
+        if not isinstance(leads_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(leads_data)}`"
+            )
+
+        if leads_data.computer is None:
+            raise ValueError("Missing `Computer` node for leads step")
+
+        if not isinstance(los_data, orm.RemoteData):
+            raise ValueError(f"Expected `RemoteData` instance; got `{type(los_data)}`")
+
+        if los_data.computer is None:
+            raise ValueError("Missing `Computer` node for los step")
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]

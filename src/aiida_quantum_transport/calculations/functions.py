@@ -30,11 +30,7 @@ def get_scattering_region(
     y_max = y.max() if y_max is None else y_max
 
     scattering_region = np.where(
-        (z >= z_average)
-        & (x >= x_min)
-        & (x <= x_max)
-        & (y >= y_min)
-        & (y <= y_max)
+        (z >= z_average) & (x >= x_min) & (x <= x_max) & (y >= y_min) & (y <= y_max)
     )[0]
 
     return orm.ArrayData(scattering_region)

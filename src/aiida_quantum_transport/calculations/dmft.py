@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import numpy as np
 from aiida import orm
@@ -11,9 +10,6 @@ from aiida.common.folders import Folder
 
 from .base import BaseCalculation
 
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
-
 
 class DMFTCalculation(BaseCalculation):
     """docstring"""
@@ -21,7 +17,7 @@ class DMFTCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.dmft"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)
@@ -158,12 +154,8 @@ class DMFTCalculation(BaseCalculation):
         matsubara_hybridization_filepath = (
             precomputed_input_dir / "matsubara_hybridization.bin"
         ).as_posix()
-        hamiltonian_filepath = (
-            precomputed_input_dir / "hamiltonian.npy"
-        ).as_posix()
-        occupancies_filepath = (
-            precomputed_input_dir / "occupancies.npy"
-        ).as_posix()
+        hamiltonian_filepath = (precomputed_input_dir / "hamiltonian.npy").as_posix()
+        occupancies_filepath = (precomputed_input_dir / "occupancies.npy").as_posix()
         scattering_region_filename = "scatt.npy"
         scattering_region_filepath = (
             precomputed_input_dir / scattering_region_filename
@@ -200,9 +192,14 @@ class DMFTCalculation(BaseCalculation):
             occupancies_filepath,
         ]
 
-        hybridization_data: orm.RemoteData = (
-            self.inputs.hybridization.remote_results_folder
-        )
+        hybridization_data = self.inputs.hybridization.remote_results_folder
+
+        if not isinstance(hybridization_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(hybridization_data)}`"
+            )
+        if hybridization_data.computer is None:
+            raise ValueError("Missing `Computer` node")
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]

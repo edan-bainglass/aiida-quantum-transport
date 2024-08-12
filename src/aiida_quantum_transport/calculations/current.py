@@ -2,16 +2,12 @@ from __future__ import annotations
 
 import pickle
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from aiida import orm
 from aiida.common.datastructures import CalcInfo, CodeInfo
 from aiida.common.folders import Folder
 
 from .base import BaseCalculation
-
-if TYPE_CHECKING:
-    from aiida.engine.processes.calcjobs.calcjob import CalcJobProcessSpec
 
 
 class CurrentCalculation(BaseCalculation):
@@ -20,7 +16,7 @@ class CurrentCalculation(BaseCalculation):
     _default_parser_name = "quantum_transport.current"
 
     @classmethod
-    def define(cls, spec: CalcJobProcessSpec) -> None:
+    def define(cls, spec) -> None:
         """docstring"""
 
         super().define(spec)
@@ -114,12 +110,24 @@ class CurrentCalculation(BaseCalculation):
             transmission_folder_path,
         ]
 
-        hybridization_data: orm.RemoteData = (
-            self.inputs.hybridization.remote_results_folder
-        )
-        transmission_data: orm.RemoteData = (
-            self.inputs.transmission.remote_results_folder
-        )
+        hybridization_data = self.inputs.hybridization.remote_results_folder
+        transmission_data = self.inputs.transmission.remote_results_folder
+
+        if not isinstance(hybridization_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(hybridization_data)}`"
+            )
+
+        if hybridization_data.computer is None:
+            raise ValueError("Missing `Computer` node for hybridization step")
+
+        if not isinstance(transmission_data, orm.RemoteData):
+            raise ValueError(
+                f"Expected `RemoteData` instance; got `{type(transmission_data)}`"
+            )
+
+        if transmission_data.computer is None:
+            raise ValueError("Missing `Computer` node for transmission step")
 
         calcinfo = CalcInfo()
         calcinfo.codes_info = [codeinfo]
